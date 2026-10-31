@@ -119,6 +119,12 @@ Matière brute pour la note de sécurité (2 pages maximum à rendre). Tout ce q
   - un poste infecté (virus, extension malveillante) compromet les messages ;
   - Element Web est servi par le serveur lui-même : un serveur compromis pourrait servir un client modifié.
   - En production : application de bureau ou mobile signée.
+- **Salons « Confidentiel » à expiration automatique :** l'effacement porte sur le serveur.
+  - Dans un navigateur, impossible de bloquer les captures d'écran, les copier-coller et les transferts.
+  - Les copies déjà reçues restent sur les appareils des membres (Element ne les efface pas tout seul).
+  - Synapse ne supprime jamais le dernier message d'un salon : il le cache seulement (il reste
+    chiffré en base jusqu'à l'arrivée d'un message plus récent).
+  - Le sujet du salon (« [CONFIDENTIEL] … ») est visible du serveur : il doit rester neutre.
 - **Métadonnées** de la section 4, non chiffrées par nature dans Matrix.
 - **Vérification des appareils** laissée aux agents : sans vérification croisée, on fait confiance au serveur pour la liste des appareils d'un collègue.
 - **Canal interne Synapse ↔ Keycloak en HTTP**, dans le réseau Docker non exposé. En production : TLS interne avec l'infrastructure de clés de l'État.

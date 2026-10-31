@@ -163,6 +163,28 @@ le rôle `agent` ; les canaux sont sur invitation et seule la console ajoute des
 
 ---
 
+### Option : salon « Confidentiel » à expiration automatique (≈ 1 min 30, plus 5 min d'attente)
+
+Répond à l'exigence du ministère « niveaux de classification… expiration automatique ».
+**Préparation** : créer le salon **5 à 6 minutes avant** le passage, pour montrer l'effacement en direct.
+
+1. Console → **Canaux** → « Créer un salon Confidentiel » : sujet `Réunion logistique`, durée
+   **5 minutes (démonstration)**, cocher `awa.ouedraogo` et `boukary.zongo` → **Créer le salon**.
+   **À l'écran** : « Salon « [CONFIDENTIEL] Réunion logistique » créé… 2 membre(s) », puis le salon dans
+   le tableau avec sa durée.
+2. Dans Element (awa) : le salon apparaît, son sujet annonce « messages effacés automatiquement après
+   5 minutes ». awa écrit deux messages.
+3. Montrer le verrouillage : awa tente d'inviter quelqu'un ou de renommer le salon → refusé (seule la
+   console en a le droit).
+4. Après 5 minutes (purge chaque minute) : les messages disparaissent de l'historique et de la base.
+   Preuve automatique (≈ 3 min, salon de 1 minute) : `python console/tests/test_confidentiel.py`.
+5. **Journal d'audit** : `confidentiel-creation` (sujet, durée, membres) et `confidentiel-ajout`.
+
+**À dire** : le serveur purge les messages chiffrés expirés, mais les copies déjà reçues restent sur
+les appareils (limites dans `docs/elements-securite.md`).
+
+---
+
 ## Épreuve 5 : explication du code (≈ 2 min par fonction)
 
 Le jury désigne la fonction **et** la personne qui l'explique : chaque membre doit connaître toute la
