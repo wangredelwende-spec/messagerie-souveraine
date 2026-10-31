@@ -28,6 +28,8 @@ class Journal:
                 BEGIN SELECT RAISE(ABORT, 'journal en ajout seul'); END;
             CREATE TRIGGER IF NOT EXISTS journal_sans_suppression BEFORE DELETE ON journal
                 BEGIN SELECT RAISE(ABORT, 'journal en ajout seul'); END;
+            -- Canal institutionnel de chaque ministère (groupe Keycloak -> salon Matrix)
+            CREATE TABLE IF NOT EXISTS canaux (ministere TEXT PRIMARY KEY, room_id TEXT NOT NULL);
         """)
 
     def ecrire(self, acteur: str, action: str, cible: str, resultat: str):
@@ -38,6 +40,13 @@ class Journal:
 
     def lire(self, limite: int = 500) -> list[sqlite3.Row]:
         return self._db.execute("SELECT * FROM journal ORDER BY id DESC LIMIT ?", (limite,)).fetchall()
+
+    def canal(self, id_ministere: str) -> str | None:
+        ligne = self._db.execute("SELECT room_id FROM canaux WHERE ministere = ?", (id_ministere,)).fetchone()
+        return ligne["room_id"] if ligne else None
+
+    def enregistrer_canal(self, id_ministere: str, room_id: str):
+        self._db.execute("INSERT INTO canaux (ministere, room_id) VALUES (?, ?)", (id_ministere, room_id))
 
     def dernieres_revocations(self) -> dict[str, str]:
         """Pour chaque agent, la dernière action de révocation réussie."""

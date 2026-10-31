@@ -6,6 +6,7 @@
   <dt>Identifiant</dt><dd><code id="identifiant">{{ identifiant }}</code></dd>
   <dt>Ministère</dt><dd>{{ ministere }}</dd>
   <dt>Fonction</dt><dd>{{ (agent.attributes or {}).get("fonction", ["—"])[0] }}</dd>
+  <dt>Canal du ministère</dt><dd>{{ "ajouté" if dans_canal else "échec : voir le journal, puis Canaux → Synchroniser" }}</dd>
 </dl>
 <div class="secret">
   <p>Mot de passe temporaire, <strong>affiché une seule fois</strong> : remettez-le à l'agent en main propre.</p>

@@ -24,3 +24,4 @@ dd { margin: 0; }
 .formulaire label { display: block; margin: .75rem 0; }
 .formulaire input, .formulaire select { display: block; width: 100%; max-width: 30rem; padding: .4rem; font-size: 1rem; }
 .erreur { color: #a11; font-weight: bold; }
+.message { background: #d8f0e2; padding: .5rem 1rem; }

@@ -49,6 +49,10 @@ class Keycloak:
         return await self._requete("GET", f"/groups/{id_groupe}/members",
                                    params={"max": 5000, "briefRepresentation": "false"})
 
+    async def ids_role_agent(self) -> set[str]:
+        utilisateurs = await self._requete("GET", "/roles/agent/users", params={"max": 5000})
+        return {u["id"] for u in utilisateurs}
+
     async def creer_agent(self, identifiant: str, prenom: str, nom: str, fonction: str, ministere: str,
                           mot_de_passe_temporaire: str) -> str:
         """Crée l'agent (rôle « agent ») ; à la connexion : changer le mot de passe puis enrôler un TOTP."""

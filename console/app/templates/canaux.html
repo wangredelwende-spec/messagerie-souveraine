@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block titre %}Canaux{% endblock %}
+{% block contenu %}
+<h1>Canaux institutionnels</h1>
+<p>Un salon par ministère : chiffré de bout en bout, sur invitation, historique visible seulement à partir
+   de l'arrivée. Seule la console y ajoute des membres ; elle ne peut lire aucun message.</p>
+{% if message %}<p class="message">{{ message }}</p>{% endif %}
+<table>
+  <thead><tr><th>Ministère</th><th>Salon</th><th>Agents actifs</th><th>Pas encore dans le canal</th><th></th></tr></thead>
+  <tbody>
+  {% for c in canaux %}
+    <tr>
+      <td>{{ c.ministere.name }}</td>
+      <td><code>{{ c.room_id }}</code></td>
+      <td>{{ c.attendus | length }}</td>
+      <td>{{ c.manquants | map(attribute="username") | join(", ") or "—" }}</td>
+      <td>{% if c.manquants %}
+        <form method="post" action="/canaux/{{ c.ministere.id }}/synchroniser">
+          <input type="hidden" name="csrf" value="{{ csrf }}">
+          <button class="bouton">Synchroniser</button>
+        </form>{% endif %}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

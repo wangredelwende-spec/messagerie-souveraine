@@ -33,6 +33,8 @@ journal = Journal(DONNEES / "journal.sqlite3")
 @asynccontextmanager
 async def cycle_de_vie(_app):
     await synapse.demarrer(lire_secret("synapse_enregistrement"))
+    for ministere in await keycloak.ministeres():
+        await canal_du_ministere(ministere, "console")
     yield
 
 
@@ -121,6 +123,26 @@ def statut(agent: dict, derniere_revocation: str | None) -> str:
     if agent.get("enabled"):
         return "actif"
     return "revoque" if derniere_revocation == "depart" else "suspendu"
+
+
+async def canal_du_ministere(ministere: dict, acteur: str) -> str:
+    """Salon Matrix du ministère, créé à la première demande."""
+    room_id = journal.canal(ministere["id"])
+    if room_id is None:
+        room_id = await synapse.creer_canal(ministere["name"])
+        journal.enregistrer_canal(ministere["id"], room_id)
+        journal.ecrire(acteur, "canal-creation", ministere["name"], "ok")
+    return room_id
+
+
+async def ajouter_au_canal(ministere: dict, identifiant: str, acteur: str) -> bool:
+    try:
+        await synapse.ajouter_au_canal(await canal_du_ministere(ministere, acteur), matrix_id(identifiant))
+    except httpx.HTTPError as e:
+        journal.ecrire(acteur, "canal-ajout", identifiant, f"échec ({ministere['name']}) : {e}")
+        return False
+    journal.ecrire(acteur, "canal-ajout", identifiant, f"ok ({ministere['name']})")
+    return True
 
 
 def mot_de_passe_temporaire() -> str:
@@ -264,8 +286,54 @@ async def enroler(request: Request, csrf: str = Form(...), prenom: str = Form(""
         journal.ecrire(admin, "enrolement", identifiant, f"échec : {e}")
         return page(request, "erreur.html", 502, message="L'enrôlement n'a pas abouti ; rien n'a été créé.")
     journal.ecrire(admin, "enrolement", identifiant, "ok")
+    dans_canal = await ajouter_au_canal(groupe, identifiant, admin)
     return page(request, "enrole.html", agent=await charger_agent(UUID(id_agent)), ministere=groupe["name"],
-                identifiant=identifiant, mot_de_passe=mot_de_passe)
+                identifiant=identifiant, mot_de_passe=mot_de_passe, dans_canal=dans_canal)
+
+
+# --- Canaux institutionnels ---
+
+async def etat_canaux() -> list[dict]:
+    agents = {a["id"]: a for a in await keycloak.agents()}
+    role_agent = await keycloak.ids_role_agent()
+    canaux = []
+    for ministere in sorted(await keycloak.ministeres(), key=lambda g: g["name"]):
+        room_id = await canal_du_ministere(ministere, "console")
+        membres = await synapse.membres_canal(room_id)
+        # Agents attendus : membres du ministère, actifs, avec le rôle « agent »
+        attendus = [agents[m["id"]] for m in await keycloak.membres(ministere["id"])
+                    if m["id"] in agents and m["id"] in role_agent and agents[m["id"]].get("enabled")]
+        canaux.append({"ministere": ministere, "room_id": room_id, "attendus": attendus,
+                       "manquants": [a for a in attendus if matrix_id(a["username"]) not in membres]})
+    return canaux
+
+
+@app.get("/canaux")
+async def voir_canaux(request: Request, admin: str = Depends(exiger_admin)):
+    return page(request, "canaux.html", canaux=await etat_canaux())
+
+
+@app.post("/canaux/{id_ministere}/synchroniser")
+async def synchroniser_canal(request: Request, id_ministere: UUID, csrf: str = Form(...),
+                             admin: str = Depends(exiger_admin)):
+    """Ajoute au canal les agents actifs du ministère qui n'y sont pas encore (comptes Matrix
+    pré-créés au besoin, par exemple pour les comptes importés avant la console)."""
+    verifier_csrf(request, csrf)
+    canal = next((c for c in await etat_canaux() if c["ministere"]["id"] == str(id_ministere)), None)
+    if canal is None:
+        raise HTTPException(404, "Ministère introuvable")
+    ajoutes = 0
+    for agent in canal["manquants"]:
+        user_id = matrix_id(agent["username"])
+        try:
+            if not await synapse.existe(user_id):
+                await synapse.creer_compte(user_id, f"{agent['firstName']} {agent['lastName']}", agent["id"])
+        except httpx.HTTPError as e:
+            journal.ecrire(admin, "canal-ajout", agent["username"], f"échec (compte Matrix) : {e}")
+            continue
+        ajoutes += await ajouter_au_canal(canal["ministere"], agent["username"], admin)
+    return page(request, "canaux.html", canaux=await etat_canaux(),
+                message=f"{canal['ministere']['name']} : {ajoutes} agent(s) ajouté(s) au canal.")
 
 
 @app.get("/agents/{id_agent}")

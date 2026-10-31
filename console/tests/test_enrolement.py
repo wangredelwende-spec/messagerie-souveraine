@@ -1,4 +1,4 @@
-"""Test de bout en bout de l'enrôlement et de l'annuaire.
+"""Test de bout en bout de l'enrôlement, de l'annuaire et des canaux institutionnels.
 
 Depuis la racine du dépôt :  python console/tests/test_enrolement.py
 L'administrateur et l'agent créés sont supprimés de Keycloak à la fin ; le compte Matrix de l'agent reste.
@@ -7,7 +7,9 @@ import re
 import secrets
 import subprocess
 
-from outils import (CONSOLE, connexion_console, creer_comptes, csrf, mot_de_passe_affiche,
+import requests
+
+from outils import (CONSOLE, MATRIX, connexion_console, creer_comptes, csrf, mot_de_passe_affiche,
                     session_matrix, supprimer_comptes, whoami)
 
 SUFFIXE = secrets.token_hex(3)
@@ -47,6 +49,27 @@ def main():
         assert re.search(r"<td>Sage-femme</td>\s*<td>Aïcha Traoré-Test %s</td>\s*<td><a [^>]*>%s</a></td>\s*"
                          r'<td><span class="statut actif">Actif</span>' % (SUFFIXE, identifiant), section)
         print("OK  annuaire : agent listé dans son ministère, avec sa fonction et le statut Actif")
+
+        canaux = console.get(f"{CONSOLE}/canaux").text
+        ligne = re.search(r"<td>Ministère de la Santé</td>\s*<td><code>([^<]+)</code>.*?</tr>", canaux, re.S)
+        salon = ligne.group(1)
+        assert salon in requests.get(f"{MATRIX}/_matrix/client/v3/joined_rooms", verify=False,
+                                     headers={"Authorization": f"Bearer {jeton}"}).json()["joined_rooms"]
+        def etat(type_):
+            return requests.get(f"{MATRIX}/_matrix/client/v3/rooms/{salon}/state/{type_}", verify=False,
+                                headers={"Authorization": f"Bearer {jeton}"}).json()
+        assert etat("m.room.encryption")["algorithm"] == "m.megolm.v1.aes-sha2"
+        assert etat("m.room.history_visibility")["history_visibility"] == "joined"
+        assert etat("m.room.join_rules")["join_rule"] == "invite"
+        print("OK  canal du ministère : agent membre, salon chiffré Megolm, sur invitation, historique « joined »")
+
+        if "/synchroniser" in ligne.group(0):
+            id_sante = re.search(r'action="/canaux/([0-9a-f-]{36})/synchroniser"', ligne.group(0)).group(1)
+            r = console.post(f"{CONSOLE}/canaux/{id_sante}/synchroniser", data={"csrf": csrf(canaux)})
+            assert "agent(s) ajouté(s)" in r.text
+        ligne = re.search(r"<td>Ministère de la Santé</td>.*?</tr>", console.get(f"{CONSOLE}/canaux").text, re.S)
+        assert "/synchroniser" not in ligne.group(0)
+        print("OK  synchronisation : tous les agents actifs de la Santé sont dans le canal")
     finally:
         supprimer_comptes(noms)
 

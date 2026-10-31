@@ -66,6 +66,35 @@ class Synapse:
         })
         r.raise_for_status()
 
+    async def creer_canal(self, nom: str) -> str:
+        """Salon institutionnel : chiffré (Megolm), sur invitation, historique visible seulement
+        à partir de l'arrivée, nom neutre sans sujet ni avatar.
+        Le compte de service en est membre (pour y ajouter les agents) mais, sans clés publiées,
+        aucun appareil ne lui partage les clés du salon : il ne lit rien."""
+        r = await self._http.post("/_matrix/client/v3/createRoom", json={
+            "name": nom,
+            "preset": "private_chat",            # entrée sur invitation uniquement
+            "visibility": "private",             # absent de l'annuaire des salons
+            "initial_state": [
+                {"type": "m.room.encryption", "state_key": "", "content": {"algorithm": "m.megolm.v1.aes-sha2"}},
+                {"type": "m.room.history_visibility", "state_key": "", "content": {"history_visibility": "joined"}},
+                {"type": "m.room.guest_access", "state_key": "", "content": {"guest_access": "forbidden"}},
+            ],
+            # Seule la console gère les membres : les agents ne peuvent ni inviter ni exclure
+            "power_level_content_override": {"invite": 100, "kick": 100, "ban": 100},
+        })
+        r.raise_for_status()
+        return r.json()["room_id"]
+
+    async def membres_canal(self, room_id: str) -> set[str]:
+        r = await self._http.get(f"/_synapse/admin/v1/rooms/{quote(room_id, safe='')}/members")
+        r.raise_for_status()
+        return set(r.json()["members"])
+
+    async def ajouter_au_canal(self, room_id: str, user_id: str):
+        r = await self._http.post(f"/_synapse/admin/v1/join/{quote(room_id, safe='')}", json={"user_id": user_id})
+        r.raise_for_status()
+
     async def desactiver(self, user_id: str) -> bool:
         """Jetons et appareils supprimés, sortie de tous les salons. Faux si l'agent ne s'est jamais connecté."""
         if not await self.existe(user_id):
