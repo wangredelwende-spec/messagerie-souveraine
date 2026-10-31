@@ -2,7 +2,7 @@
 
 Lancé par scripts/test-intrus.sh. Comptes utilisés :
 - stagiaire.sansrole (compte réel SANS le rôle agent) : son TOTP est remis à zéro avant et après ;
-- un agent jetable « test.intrus.xxxxxx », créé puis supprimé de Keycloak.
+- un agent jetable « test.intrus.xxxxxx », désactivé dans Synapse et supprimé de Keycloak à la fin.
 Aucun autre compte n'est touché.
 """
 import subprocess

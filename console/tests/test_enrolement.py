@@ -1,7 +1,7 @@
 """Test de bout en bout de l'enrôlement, de l'annuaire et des canaux institutionnels.
 
 Depuis la racine du dépôt :  python console/tests/test_enrolement.py
-L'administrateur et l'agent créés sont supprimés de Keycloak à la fin ; le compte Matrix de l'agent reste.
+À la fin, les comptes créés sont désactivés dans Synapse et supprimés de Keycloak.
 """
 import re
 import secrets

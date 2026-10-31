@@ -5,8 +5,8 @@ Depuis la racine du dépôt :
     pip install -r console/tests/requirements.txt
     python console/tests/test_revocation.py
 
-Le test crée des comptes jetables (suffixe aléatoire) et les supprime de Keycloak à la fin ;
-les comptes Matrix correspondants restent dans Synapse (désactivés ou sans appareil).
+Le test crée des comptes jetables (suffixe aléatoire) ; à la fin, leurs comptes Matrix sont
+désactivés et leurs comptes Keycloak supprimés.
 """
 import re
 import secrets

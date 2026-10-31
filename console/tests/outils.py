@@ -39,7 +39,27 @@ def creer_comptes(comptes):
     kcadm(" && ".join(commandes))
 
 
+def desactiver_matrix(noms):
+    """Désactive les comptes Matrix des comptes de test, avec le jeton du compte de service de la
+    console (l'API d'administration de Synapse n'est joignable que depuis le réseau interne)."""
+    script = """
+import httpx, sys
+from urllib.parse import quote
+j = open('/donnees/synapse_jeton').read().strip()
+c = httpx.Client(base_url='http://synapse:8008', headers={'Authorization': 'Bearer ' + j}, timeout=60)
+for nom in sys.argv[1:]:
+    u = quote('@' + nom + ':messagerie.test', safe='')
+    r = c.get('/_synapse/admin/v2/users/' + u)
+    if r.status_code == 200 and not r.json()['deactivated']:
+        c.post('/_synapse/admin/v1/deactivate/' + u, json={'erase': False}).raise_for_status()
+"""
+    subprocess.run(["docker", "compose", "exec", "-T", "console", "python", "-c", script, *noms],
+                   check=True, capture_output=True, text=True)
+
+
 def supprimer_comptes(noms):
+    """Nettoyage d'un test : compte Matrix désactivé, puis compte Keycloak supprimé."""
+    desactiver_matrix(noms)
     kcadm(" ; ".join(
         f"$K delete users/$($K get users $C -r administration -q username={nom} -q exact=true "
         f"--fields id --format csv --noquotes) $C -r administration" for nom in noms))
