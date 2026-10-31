@@ -176,8 +176,10 @@ Répond à l'exigence du ministère « niveaux de classification… expiration a
    5 minutes ». awa écrit deux messages.
 3. Montrer le verrouillage : awa tente d'inviter quelqu'un ou de renommer le salon → refusé (seule la
    console en a le droit).
-4. Après 5 minutes (purge chaque minute) : les messages disparaissent de l'historique et de la base.
-   Preuve automatique (≈ 3 min, salon de 1 minute) : `python console/tests/test_confidentiel.py`.
+4. Après 5 minutes (purge chaque minute), les messages sont effacés **du serveur**. Element garde
+   ceux déjà affichés dans son cache local (c'est la limite « copies déjà reçues ») : pour la preuve,
+   regarder la base, pas l'écran d'awa. Preuve automatique (≈ 3 min, salon de 1 minute, vérifie le
+   404 et l'absence dans la table `events`) : `python console/tests/test_confidentiel.py`.
 5. **Journal d'audit** : `confidentiel-creation` (sujet, durée, membres) et `confidentiel-ajout`.
 
 **À dire** : le serveur purge les messages chiffrés expirés, mais les copies déjà reçues restent sur
