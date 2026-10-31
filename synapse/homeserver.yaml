@@ -1,0 +1,113 @@
+# Configuration de Synapse (serveur Matrix) — Messagerie souveraine de l'administration
+# Documentation : https://element-hq.github.io/synapse/latest/usage/configuration/config_documentation.html
+# Aucun secret dans ce fichier : ils sont lus dans /run/secrets/ (fournis par docker compose
+# à partir du fichier .env) et le mot de passe de la base vient de la variable PGPASSWORD.
+
+# --- Identité du serveur ---
+# Les identifiants des agents seront de la forme @prenom.nom:messagerie.test
+server_name: "messagerie.test"
+public_baseurl: "https://matrix.messagerie.test/"
+web_client_location: "https://chat.messagerie.test/"
+
+pid_file: /data/homeserver.pid
+signing_key_path: /data/messagerie.test.signing.key   # générée automatiquement au premier démarrage
+media_store_path: /data/media_store                    # fichiers envoyés (chiffrés par les clients)
+log_config: /config/log.config
+max_upload_size: 50M
+
+# --- Écoute HTTP (derrière Caddy, qui fait le HTTPS) ---
+listeners:
+  - port: 8008
+    type: http
+    tls: false
+    x_forwarded: true          # Caddy transmet l'adresse IP réelle du client
+    bind_addresses: ["0.0.0.0"]
+    resources:
+      - names: [client]        # API client seulement : la ressource « federation » n'est pas servie
+        compress: false
+
+# --- Base de données PostgreSQL ---
+database:
+  name: psycopg2
+  args:
+    user: synapse
+    dbname: synapse
+    host: postgres
+    port: 5432
+    cp_min: 5
+    cp_max: 10
+
+# --- Fédération coupée : ce serveur ne parle à aucun autre serveur Matrix ---
+federation_domain_whitelist: []          # liste vide = aucun serveur autorisé
+trusted_key_servers: []                   # sinon Synapse interroge matrix.org
+suppress_key_server_warning: true
+allow_public_rooms_over_federation: false
+serve_server_wellknown: false
+
+# --- Comptes : aucune inscription, aucun mot de passe Matrix ---
+enable_registration: false
+password_config:
+  enabled: false                          # connexion uniquement via Keycloak (SSO)
+# Secret de l'API d'enregistrement par secret partagé (compte de service de la console)
+registration_shared_secret_path: /run/secrets/synapse_enregistrement
+
+# --- Chiffrement de bout en bout activé par défaut dans TOUS les salons ---
+encryption_enabled_by_default_for_room_type: all
+
+# --- Rien ne sort vers Internet ---
+url_preview_enabled: false               # pas d'aperçu de liens (le serveur irait chercher la page)
+report_stats: false                      # pas de statistiques envoyées à matrix.org
+enable_metrics: false
+push:
+  include_content: false                 # si une notification push existait, elle ne contiendrait aucun contenu
+# Pas de serveur d'identité, pas d'email, pas de passerelle push : rien n'est configuré.
+
+# --- Minimisation des métadonnées ---
+user_ips_max_age: 1d                     # adresses IP des connexions conservées 1 jour (28 jours par défaut)
+require_auth_for_profile_requests: true  # profils visibles seulement par des utilisateurs connectés
+limit_profile_requests_to_users_who_share_rooms: true
+include_profile_data_on_invite: false
+forget_rooms_on_leave: true              # un salon quitté est oublié
+presence:
+  enabled: false                         # pas d'indicateur « en ligne » (qui est connecté, et quand)
+room_list_publication_rules:
+  - action: deny                         # aucun salon publié dans un annuaire public
+user_directory:
+  enabled: true
+  search_all_users: true                 # un agent peut trouver tout autre agent de l'administration
+
+# --- Connexion unique (SSO) via Keycloak ---
+sso:
+  client_whitelist:
+    - "https://chat.messagerie.test/"    # Element : pas de page de confirmation supplémentaire
+  update_profile_information: true       # le nom affiché est resynchronisé depuis Keycloak à chaque connexion
+
+oidc_providers:
+  - idp_id: keycloak                     # Synapse l'appelle « oidc-keycloak »
+    idp_name: "Compte agent public"
+    # Pas de découverte automatique : le navigateur et Synapse ne joignent pas
+    # Keycloak par la même adresse (voir docs/fiche-oral.md).
+    discover: false
+    # L'émetteur des jetons = l'adresse publique de Keycloak
+    issuer: "https://auth.messagerie.test/realms/administration"
+    # Adresse vue par le NAVIGATEUR (page de connexion)
+    authorization_endpoint: "https://auth.messagerie.test/realms/administration/protocol/openid-connect/auth"
+    # Adresses vues par SYNAPSE, dans le réseau Docker interne (jamais exposé)
+    token_endpoint: "http://keycloak:8080/realms/administration/protocol/openid-connect/token"
+    userinfo_endpoint: "http://keycloak:8080/realms/administration/protocol/openid-connect/userinfo"
+    jwks_uri: "http://keycloak:8080/realms/administration/protocol/openid-connect/certs"
+    client_id: synapse
+    client_secret_path: /run/secrets/synapse_oidc
+    pkce_method: always                  # protection du code d'autorisation (PKCE S256)
+    scopes: ["openid", "profile"]
+    # Seuls les comptes qui ont le rôle « agent » peuvent entrer dans la messagerie
+    attribute_requirements:
+      - attribute: roles
+        value: agent
+    # Quand Keycloak ferme une session, il prévient Synapse qui déconnecte les appareils liés
+    backchannel_logout_enabled: true
+    user_mapping_provider:
+      config:
+        subject_claim: sub
+        localpart_template: "{{ user.preferred_username }}"
+        display_name_template: "{{ user.given_name }} {{ user.family_name }}"
