@@ -21,11 +21,47 @@ _À compléter (phase 4). Détail dans `docs/technologies.md`._
 
 ## Installation
 
-_À compléter (phase 1)._
+Prérequis : Docker et Docker Compose, ports 80 et 443 libres, environ 3 Go de RAM.
+
+1. Déclarer les noms dans le fichier hosts (Windows : `C:\Windows\System32\drivers\etc\hosts`, en administrateur) :
+   ```
+   127.0.0.1 chat.messagerie.test matrix.messagerie.test auth.messagerie.test admin.messagerie.test
+   ```
+2. Lancer :
+   ```sh
+   cp .env.example .env      # en déploiement réel : changer toutes les valeurs
+   docker compose up -d --wait
+   ```
+   Au premier démarrage (environ 1 minute), tout s'initialise automatiquement : bases PostgreSQL,
+   clé de signature Synapse, import du realm Keycloak, autorité de certification de Caddy.
+3. Faire confiance à l'autorité de certification interne de Caddy :
+   ```sh
+   docker compose cp caddy:/data/caddy/pki/authorities/local/root.crt ./caddy-racine.crt
+   ```
+   - **Chrome / Edge (Windows)** : `certutil -addstore -user Root caddy-racine.crt`, accepter, puis redémarrer le navigateur.
+   - **Firefox** : Paramètres → Vie privée et sécurité → Certificats → Afficher les certificats →
+     Autorités → Importer → cocher « Confirmer cette AC pour identifier des sites web ».
+
+   Cette CA est propre à chaque installation (elle est recréée si le volume `caddy_donnees` est supprimé).
+4. Ouvrir https://chat.messagerie.test
+
+Remise à zéro complète (toutes les données sont effacées) : `docker compose down -v`.
 
 ## Comptes de démonstration
 
-_À compléter (phase 1)._
+Tous les comptes sont **fictifs**. À la première connexion, Keycloak impose de configurer un code
+TOTP avec une application open source (Aegis ou FreeOTP) : scanner le QR code, puis saisir le code.
+
+| Identifiant | Mot de passe | Ministère | Fonction | Rôle |
+|---|---|---|---|---|
+| `awa.ouedraogo` | `Agent-Demo-2026!` | Santé | Médecin-chef de district | agent |
+| `boukary.zongo` | `Agent-Demo-2026!` | Santé | Responsable de la logistique | agent |
+| `issa.sawadogo` | `Agent-Demo-2026!` | Économie et Finances | Contrôleur financier | agent |
+| `mariam.kabore` | `Agent-Demo-2026!` | Transition digitale | Cheffe de projet numérique | agent |
+| `admin.messagerie` | `Admin-Demo-2026!` | Transition digitale | Administratrice de la messagerie | admin-messagerie |
+| `stagiaire.sansrole` | `Stagiaire-Demo-2026!` | Santé | Stagiaire | *aucun* : refusé par Synapse (test d'intrusion) |
+
+Console technique Keycloak : https://auth.messagerie.test/admin (compte `admin`, mot de passe `KEYCLOAK_ADMIN_PASSWORD` du `.env`).
 
 ## Limites
 
