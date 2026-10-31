@@ -21,3 +21,6 @@ dd { margin: 0; }
 .bouton.perte-appareil { background: #b35c00; }
 .secret { background: #fff; border: 2px solid #b35c00; padding: 1rem; }
 .secret code { font-size: 1.3rem; user-select: all; }
+.formulaire label { display: block; margin: .75rem 0; }
+.formulaire input, .formulaire select { display: block; width: 100%; max-width: 30rem; padding: .4rem; font-size: 1rem; }
+.erreur { color: #a11; font-weight: bold; }

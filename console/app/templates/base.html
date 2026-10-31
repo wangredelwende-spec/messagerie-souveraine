@@ -11,7 +11,8 @@
     <strong>Console d'administration de la messagerie</strong>
     {% if admin %}
     <nav>
-      <a href="/">Agents</a>
+      <a href="/">Annuaire</a>
+      <a href="/enroler">Enrôler un agent</a>
       <a href="/journal">Journal d'audit</a>
       <form method="post" action="/deconnexion">
         <input type="hidden" name="csrf" value="{{ csrf }}">

@@ -50,16 +50,25 @@ class Synapse:
         r.raise_for_status()
         return r.json()["access_token"]
 
-    async def _existe(self, user_id: str) -> bool:
+    async def existe(self, user_id: str) -> bool:
         r = await self._http.get(f"/_synapse/admin/v2/users/{quote(user_id, safe='')}")
         if r.status_code == 404:
             return False
         r.raise_for_status()
         return True
 
+    async def creer_compte(self, user_id: str, nom_affiche: str, sub_keycloak: str):
+        """Pré-crée le compte Matrix, lié à l'identité Keycloak : à sa première connexion SSO,
+        Synapse retrouve l'agent par son « sub » et ouvre ce compte."""
+        r = await self._http.put(f"/_synapse/admin/v2/users/{quote(user_id, safe='')}", json={
+            "displayname": nom_affiche, "admin": False,
+            "external_ids": [{"auth_provider": "oidc-keycloak", "external_id": sub_keycloak}],
+        })
+        r.raise_for_status()
+
     async def desactiver(self, user_id: str) -> bool:
         """Jetons et appareils supprimés, sortie de tous les salons. Faux si l'agent ne s'est jamais connecté."""
-        if not await self._existe(user_id):
+        if not await self.existe(user_id):
             return False
         r = await self._http.post(f"/_synapse/admin/v1/deactivate/{quote(user_id, safe='')}", json={"erase": False})
         r.raise_for_status()
@@ -67,7 +76,7 @@ class Synapse:
 
     async def supprimer_appareils(self, user_id: str) -> int:
         """Supprime tous les appareils (et donc leurs jetons) ; le compte Matrix est conservé."""
-        if not await self._existe(user_id):
+        if not await self.existe(user_id):
             return 0
         chemin = f"/_synapse/admin/v2/users/{quote(user_id, safe='')}"
         r = await self._http.get(f"{chemin}/devices")

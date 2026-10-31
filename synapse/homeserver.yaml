@@ -82,6 +82,19 @@ sso:
     - "https://chat.messagerie.test/"    # Element : pas de page de confirmation supplémentaire
   update_profile_information: true       # le nom affiché est resynchronisé depuis Keycloak à chaque connexion
 
+# Limite des connexions : par défaut, 5 connexions puis 1 toutes les ~5 minutes PAR ADRESSE IP,
+# ce qui bloquerait tous les agents d'un ministère derrière une même adresse (NAT).
+# Ici, la seule connexion possible est l'échange d'un jeton SSO à usage unique, imprévisible ;
+# le mot de passe et le TOTP sont vérifiés par Keycloak, qui a sa propre protection anti-force brute.
+# La limite des échecs (rc_login.failed_attempts) reste celle par défaut.
+rc_login:
+  address:
+    per_second: 1
+    burst_count: 20
+  account:
+    per_second: 1
+    burst_count: 10
+
 oidc_providers:
   - idp_id: keycloak                     # Synapse l'appelle « oidc-keycloak »
     idp_name: "Compte agent public"

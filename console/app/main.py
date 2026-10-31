@@ -2,8 +2,10 @@
 
 Accès protégé par Keycloak (OIDC, client « console ») : seul le rôle admin-messagerie entre.
 """
+import re
 import secrets
 import string
+import unicodedata
 from contextlib import asynccontextmanager
 from urllib.parse import urlencode
 from uuid import UUID
@@ -182,13 +184,88 @@ async def deconnexion(request: Request, csrf: str = Form(...)):
 
 # --- Agents et révocation ---
 
+def fonction(agent: dict) -> str:
+    return (agent.get("attributes") or {}).get("fonction", [""])[0]
+
+
 @app.get("/")
-async def accueil(request: Request, admin: str = Depends(exiger_admin)):
+async def annuaire(request: Request, admin: str = Depends(exiger_admin)):
+    """Annuaire : agents par ministère, triés par fonction, avec leur statut."""
     revocations = journal.dernieres_revocations()
-    agents = sorted(await keycloak.agents(), key=lambda a: a["username"])
-    for a in agents:
-        a["statut"] = statut(a, revocations.get(a["username"]))
-    return page(request, "accueil.html", agents=agents)
+    agents = {a["id"]: a for a in await keycloak.agents()}
+    for a in agents.values():
+        a["statut"], a["fonction"] = statut(a, revocations.get(a["username"])), fonction(a)
+    sections, ranges = [], set()
+    for ministere in sorted(await keycloak.ministeres(), key=lambda g: g["name"]):
+        ids = [m["id"] for m in await keycloak.membres(ministere["id"]) if m["id"] in agents]
+        ranges.update(ids)
+        sections.append({"nom": ministere["name"], "agents": [agents[i] for i in ids]})
+    sans_ministere = [a for i, a in agents.items() if i not in ranges]
+    if sans_ministere:
+        sections.append({"nom": "Sans ministère", "agents": sans_ministere})
+    for section in sections:
+        section["agents"].sort(key=lambda a: (a["fonction"], a["username"]))
+    return page(request, "accueil.html", sections=sections)
+
+
+def normaliser(texte: str) -> str:
+    """« Ouédraogo » -> « ouedraogo » : identifiant ASCII, valide aussi comme identifiant Matrix."""
+    ascii_ = unicodedata.normalize("NFKD", texte).encode("ascii", "ignore").decode().lower()
+    return re.sub(r"[^a-z0-9]+", "-", ascii_).strip("-")
+
+
+async def identifiant_libre(prenom: str, nom: str) -> str:
+    """prenom.nom, puis prenom.nom2, prenom.nom3… s'il est déjà pris dans Keycloak ou dans Synapse
+    (un agent parti garde son compte Matrix désactivé : son identifiant n'est jamais réattribué)."""
+    base = f"{normaliser(prenom)}.{normaliser(nom)}"
+    for n in range(1, 100):
+        candidat = base if n == 1 else f"{base}{n}"
+        if not await keycloak.identifiant_pris(candidat) and not await synapse.existe(matrix_id(candidat)):
+            return candidat
+    raise HTTPException(409, "Aucun identifiant disponible")
+
+
+@app.get("/enroler")
+async def formulaire_enrolement(request: Request, admin: str = Depends(exiger_admin)):
+    return page(request, "enroler.html", ministeres=sorted(await keycloak.ministeres(), key=lambda g: g["name"]),
+                valeurs={}, erreur=None)
+
+
+@app.post("/enroler")
+async def enroler(request: Request, csrf: str = Form(...), prenom: str = Form(""), nom: str = Form(""),
+                  ministere: str = Form(""), fonction_agent: str = Form("", alias="fonction"),
+                  admin: str = Depends(exiger_admin)):
+    verifier_csrf(request, csrf)
+    ministeres = sorted(await keycloak.ministeres(), key=lambda g: g["name"])
+    groupe = next((g for g in ministeres if g["id"] == ministere), None)
+    valeurs = {"prenom": prenom.strip(), "nom": nom.strip(), "ministere": ministere, "fonction": fonction_agent.strip()}
+    erreur = None
+    if not (valeurs["prenom"] and valeurs["nom"] and valeurs["fonction"] and groupe):
+        erreur = "Tous les champs sont obligatoires."
+    elif not (normaliser(valeurs["prenom"]) and normaliser(valeurs["nom"])):
+        erreur = "Le prénom et le nom doivent contenir des lettres."
+    elif max(len(v) for v in valeurs.values()) > 100:
+        erreur = "Chaque champ est limité à 100 caractères."
+    if erreur:
+        return page(request, "enroler.html", 400, ministeres=ministeres, valeurs=valeurs, erreur=erreur)
+
+    identifiant = await identifiant_libre(valeurs["prenom"], valeurs["nom"])
+    mot_de_passe = mot_de_passe_temporaire()
+    try:
+        id_agent = await keycloak.creer_agent(identifiant, valeurs["prenom"], valeurs["nom"], valeurs["fonction"],
+                                              groupe["path"], mot_de_passe)
+        try:
+            # Le « sub » des jetons Keycloak est l'identifiant interne de l'agent
+            await synapse.creer_compte(matrix_id(identifiant), f"{valeurs['prenom']} {valeurs['nom']}", id_agent)
+        except httpx.HTTPError:
+            await keycloak.supprimer_agent(id_agent)
+            raise
+    except httpx.HTTPError as e:
+        journal.ecrire(admin, "enrolement", identifiant, f"échec : {e}")
+        return page(request, "erreur.html", 502, message="L'enrôlement n'a pas abouti ; rien n'a été créé.")
+    journal.ecrire(admin, "enrolement", identifiant, "ok")
+    return page(request, "enrole.html", agent=await charger_agent(UUID(id_agent)), ministere=groupe["name"],
+                identifiant=identifiant, mot_de_passe=mot_de_passe)
 
 
 @app.get("/agents/{id_agent}")

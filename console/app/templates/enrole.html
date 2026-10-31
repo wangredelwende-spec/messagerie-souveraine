@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block titre %}Agent enrôlé{% endblock %}
+{% block contenu %}
+<h1>Agent enrôlé : {{ agent.firstName }} {{ agent.lastName }}</h1>
+<dl>
+  <dt>Identifiant</dt><dd><code id="identifiant">{{ identifiant }}</code></dd>
+  <dt>Ministère</dt><dd>{{ ministere }}</dd>
+  <dt>Fonction</dt><dd>{{ (agent.attributes or {}).get("fonction", ["—"])[0] }}</dd>
+</dl>
+<div class="secret">
+  <p>Mot de passe temporaire, <strong>affiché une seule fois</strong> : remettez-le à l'agent en main propre.</p>
+  <code id="mot-de-passe">{{ mot_de_passe }}</code>
+</div>
+<p><a href="/">Retour à l'annuaire</a></p>
+{% endblock %}

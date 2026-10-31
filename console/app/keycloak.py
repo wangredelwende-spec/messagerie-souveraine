@@ -32,11 +32,46 @@ class Keycloak:
         return r.json() if r.content else None
 
     async def agents(self) -> list[dict]:
-        utilisateurs = await self._requete("GET", "/users", params={"max": 5000, "briefRepresentation": "true"})
+        utilisateurs = await self._requete("GET", "/users", params={"max": 5000, "briefRepresentation": "false"})
         return [u for u in utilisateurs if not u["username"].startswith("service-account-")]
 
     async def agent(self, id_agent: str) -> dict:
         return await self._requete("GET", f"/users/{id_agent}")
+
+    async def identifiant_pris(self, identifiant: str) -> bool:
+        return bool(await self._requete("GET", "/users", params={"username": identifiant, "exact": "true"}))
+
+    async def ministeres(self) -> list[dict]:
+        """Groupes de premier niveau = ministères."""
+        return await self._requete("GET", "/groups", params={"briefRepresentation": "false"})
+
+    async def membres(self, id_groupe: str) -> list[dict]:
+        return await self._requete("GET", f"/groups/{id_groupe}/members",
+                                   params={"max": 5000, "briefRepresentation": "false"})
+
+    async def creer_agent(self, identifiant: str, prenom: str, nom: str, fonction: str, ministere: str,
+                          mot_de_passe_temporaire: str) -> str:
+        """Crée l'agent (rôle « agent ») ; à la connexion : changer le mot de passe puis enrôler un TOTP."""
+        r = await self._http.post("/users", headers=await self._entetes(), json={
+            "username": identifiant, "firstName": prenom, "lastName": nom, "enabled": True,
+            "attributes": {"fonction": [fonction]}, "groups": [ministere],
+            "requiredActions": ["UPDATE_PASSWORD", "CONFIGURE_TOTP"],
+        })
+        r.raise_for_status()
+        id_agent = r.headers["Location"].rstrip("/").rsplit("/", 1)[-1]
+        try:
+            await self._requete("PUT", f"/users/{id_agent}/reset-password",
+                                json={"type": "password", "value": mot_de_passe_temporaire, "temporary": True})
+            role = await self._requete("GET", "/roles/agent")
+            await self._requete("POST", f"/users/{id_agent}/role-mappings/realm", json=[role])
+        except httpx.HTTPError:
+            await self.supprimer_agent(id_agent)
+            raise
+        return id_agent
+
+    async def supprimer_agent(self, id_agent: str):
+        """Utilisé seulement pour annuler un enrôlement qui a échoué en cours de route."""
+        await self._requete("DELETE", f"/users/{id_agent}")
 
     async def _modifier(self, id_agent: str, **champs):
         # On renvoie la représentation complète : un PUT partiel pourrait effacer des attributs
