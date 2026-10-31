@@ -43,6 +43,10 @@ services:
       KC_HEALTH_ENABLED: "true"
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      # La page de configuration du TOTP ne suggère que des applications open source
+      # (FreeOTP, Aegis) : on retire Google Authenticator et Microsoft Authenticator.
+      KC_SPI_OTP_APPLICATION__GOOGLE__ENABLED: "false"
+      KC_SPI_OTP_APPLICATION__MICROSOFT_AUTHENTICATOR__ENABLED: "false"
       # Valeurs injectées dans le fichier du realm (${...})
       SYNAPSE_OIDC_SECRET: ${SYNAPSE_OIDC_SECRET}
       CONSOLE_OIDC_SECRET: ${CONSOLE_OIDC_SECRET}
