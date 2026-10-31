@@ -1,0 +1,22 @@
+# Secrets : ne jamais les commiter (on fournit .env.example à la place)
+.env
+
+# Données générées au démarrage (bases, clés Synapse, médias, certificats Caddy)
+donnees/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
+# Exports et dumps produits par les scripts de vérification
+*.dump
+*.sql.gz
+preuves/
+
+# Éditeurs et système
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store

@@ -1,0 +1,8 @@
+# Fins de ligne Unix (LF) partout : les scripts .sh et les fichiers de
+# configuration sont lus par des conteneurs Linux, qui refusent les CRLF de Windows.
+* text=auto eol=lf
+
+# Fichiers binaires : aucune conversion
+*.png binary
+*.jpg binary
+*.ico binary
