@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block titre %}{{ action.titre }}{% endblock %}
+{% block contenu %}
+<h1>{{ action.titre }} : {{ agent.username }}</h1>
+<ul>{% for l in compte_rendu %}<li>{{ l }}</li>{% endfor %}</ul>
+<p>Statut : <span class="statut {{ agent.statut }}">{{ statuts[agent.statut] }}</span></p>
+{% if mot_de_passe %}
+<div class="secret">
+  <p>Mot de passe temporaire, <strong>affiché une seule fois</strong> : remettez-le à l'agent en main propre.</p>
+  <code id="mot-de-passe">{{ mot_de_passe }}</code>
+</div>
+{% endif %}
+<p><a href="/">Retour aux agents</a></p>
+{% endblock %}

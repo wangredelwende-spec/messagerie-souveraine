@@ -60,3 +60,14 @@ auth.messagerie.test {
 		reverse_proxy keycloak:8080
 	}
 }
+
+# Console d'administration : rendu serveur, aucun script autorisé
+admin.messagerie.test {
+	import securite
+	header {
+		X-Frame-Options "DENY"
+		Cache-Control "no-store"
+		Content-Security-Policy "default-src 'none'; style-src 'self'; img-src 'self'; form-action 'self' https://auth.messagerie.test; frame-ancestors 'none'; base-uri 'none'"
+	}
+	reverse_proxy console:8000
+}

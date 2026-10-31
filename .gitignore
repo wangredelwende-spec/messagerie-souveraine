@@ -21,3 +21,6 @@ preuves/
 Thumbs.db
 .DS_Store
 caddy-racine.crt
+
+# Notes de travail locales
+CLAUDE.md

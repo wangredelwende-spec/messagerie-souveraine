@@ -96,6 +96,30 @@ services:
       - ./element/config.json:/app/config.json:ro
     networks: [interne]
 
+  # Console d'administration (admin.messagerie.test) : révocation, enrôlement, annuaire, canaux.
+  # Elle appelle Keycloak et Synapse uniquement par le réseau interne.
+  console:
+    build: ./console
+    image: messagerie-console:local
+    restart: unless-stopped
+    environment:
+      # Échange du code OIDC en http://keycloak:8080 : réseau Docker interne, jamais exposé
+      AUTHLIB_INSECURE_TRANSPORT: "1"
+    secrets: [console_oidc, synapse_enregistrement]
+    volumes:
+      - console_donnees:/donnees         # journal d'audit + jeton du compte de service Synapse
+    depends_on:
+      keycloak:
+        condition: service_healthy
+      synapse:
+        condition: service_healthy
+    networks: [interne]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/sante')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
   # Caddy : seul service joignable depuis l'ordinateur, en HTTPS (CA interne)
   caddy:
     image: caddy:2.11.7-alpine
@@ -114,10 +138,13 @@ secrets:
     environment: SYNAPSE_OIDC_SECRET
   synapse_enregistrement:
     environment: SYNAPSE_REGISTRATION_SECRET
+  console_oidc:
+    environment: CONSOLE_OIDC_SECRET
 
 volumes:
   postgres_donnees:
   synapse_donnees:
+  console_donnees:
   caddy_donnees:
 
 networks:

@@ -1,0 +1,23 @@
+body { margin: 0; font-family: system-ui, sans-serif; color: #1a1a1a; background: #f6f6f4; }
+header { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-between; align-items: center;
+         padding: .75rem 1rem; background: #00563f; color: #fff; }
+header a, header button { color: #fff; }
+nav { display: flex; gap: 1rem; align-items: center; }
+nav form { margin: 0; }
+nav button { background: none; border: 1px solid #fff; border-radius: 4px; padding: .3rem .6rem; cursor: pointer; }
+main { max-width: 60rem; margin: 0 auto; padding: 1rem; }
+table { width: 100%; border-collapse: collapse; background: #fff; }
+th, td { text-align: left; padding: .5rem; border-bottom: 1px solid #ddd; }
+dt { font-weight: bold; margin-top: .5rem; }
+dd { margin: 0; }
+.statut { padding: .1rem .5rem; border-radius: 1rem; font-size: .9em; }
+.statut.actif { background: #d8f0e2; }
+.statut.suspendu { background: #fde8c4; }
+.statut.revoque { background: #f6d2d2; }
+.actions { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: .5rem; }
+.bouton { display: inline-block; padding: .5rem 1rem; border: 0; border-radius: 4px; color: #fff;
+          background: #00563f; text-decoration: none; font-size: 1rem; cursor: pointer; }
+.bouton.depart { background: #a11; }
+.bouton.perte-appareil { background: #b35c00; }
+.secret { background: #fff; border: 2px solid #b35c00; padding: 1rem; }
+.secret code { font-size: 1.3rem; user-select: all; }

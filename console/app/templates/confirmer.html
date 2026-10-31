@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block titre %}{{ action.titre }}{% endblock %}
+{% block contenu %}
+<h1>{{ action.titre }} : {{ agent.firstName }} {{ agent.lastName }} ({{ agent.username }})</h1>
+<p>Cette action va :</p>
+<ul>{% for e in action.effets %}<li>{{ e }}</li>{% endfor %}</ul>
+<form method="post" action="/agents/{{ agent.id }}/{{ nom_action }}">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <button class="bouton {{ nom_action }}">Confirmer</button>
+  <a href="/agents/{{ agent.id }}">Annuler</a>
+</form>
+{% endblock %}

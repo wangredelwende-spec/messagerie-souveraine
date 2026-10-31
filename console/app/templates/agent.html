@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block titre %}{{ agent.username }}{% endblock %}
+{% block contenu %}
+<h1>{{ agent.firstName }} {{ agent.lastName }}</h1>
+<dl>
+  <dt>Identifiant</dt><dd>{{ agent.username }}</dd>
+  <dt>Fonction</dt><dd>{{ (agent.attributes or {}).get("fonction", ["—"])[0] }}</dd>
+  <dt>Statut</dt><dd><span class="statut {{ agent.statut }}">{{ statuts[agent.statut] }}</span></dd>
+</dl>
+{% if actions %}
+<h2>Actions</h2>
+<ul class="actions">
+  {% for cle, a in actions.items() %}
+  <li><a class="bouton {{ cle }}" href="/agents/{{ agent.id }}/{{ cle }}">{{ a.titre }}</a></li>
+  {% endfor %}
+</ul>
+{% elif agent.username == admin %}
+<p>Vous ne pouvez pas agir sur votre propre compte.</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block contenu %}
+<h1>Agents</h1>
+<table>
+  <thead><tr><th>Identifiant</th><th>Nom</th><th>Statut</th></tr></thead>
+  <tbody>
+  {% for a in agents %}
+    <tr>
+      <td><a href="/agents/{{ a.id }}">{{ a.username }}</a></td>
+      <td>{{ a.firstName }} {{ a.lastName }}</td>
+      <td><span class="statut {{ a.statut }}">{{ statuts[a.statut] }}</span></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
