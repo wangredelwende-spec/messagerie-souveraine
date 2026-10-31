@@ -1,0 +1,53 @@
+# Caddy : point d'entrée HTTPS unique de la messagerie.
+# Les certificats sont signés par l'autorité de certification INTERNE de Caddy
+# (« tls internal ») : aucun contact avec Let's Encrypt ni avec Internet.
+
+{
+	# Ne pas tenter d'installer la CA dans le magasin du conteneur (inutile ici)
+	skip_install_trust
+	# Pas d'API d'administration de Caddy
+	admin off
+}
+
+# En-têtes de sécurité communs à tous les sites
+(securite) {
+	tls internal
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+		-Server
+	}
+}
+
+# Element Web (l'application de messagerie dans le navigateur)
+chat.messagerie.test {
+	import securite
+	header {
+		X-Frame-Options "SAMEORIGIN"
+		# Le navigateur refuse toute connexion vers un domaine non listé :
+		# même si Element essayait de joindre un service externe, ce serait bloqué.
+		Content-Security-Policy "default-src 'self'; connect-src 'self' https://matrix.messagerie.test https://auth.messagerie.test; img-src 'self' data: blob: https://matrix.messagerie.test; media-src 'self' blob: https://matrix.messagerie.test; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; worker-src 'self' blob:; frame-src 'self' blob:; frame-ancestors 'self'; base-uri 'self'; form-action 'self' https://matrix.messagerie.test https://auth.messagerie.test; object-src 'none'"
+	}
+	reverse_proxy element:80
+}
+
+# Synapse : seules l'API client Matrix et les pages SSO sont publiées.
+# L'API d'administration (/_synapse/admin) n'est PAS publiée : seule la console
+# y accède, par le réseau Docker interne.
+matrix.messagerie.test {
+	import securite
+	@synapse path /_matrix/* /_synapse/client/*
+	handle @synapse {
+		reverse_proxy synapse:8008
+	}
+	handle {
+		respond "Introuvable" 404
+	}
+}
+
+# Keycloak : connexion des agents (mot de passe + code TOTP)
+auth.messagerie.test {
+	import securite
+	reverse_proxy keycloak:8080
+}

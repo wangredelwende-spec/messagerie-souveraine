@@ -1,0 +1,125 @@
+# Messagerie souveraine de l'administration : tous les services.
+# Démarrage :  cp .env.example .env   puis   docker compose up -d
+# Les versions des images sont épinglées (jamais « latest ») pour un résultat reproductible.
+name: messagerie
+
+services:
+
+  # Base de données : une base « synapse » et une base « keycloak », chacune avec son utilisateur
+  postgres:
+    image: postgres:17.11-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      SYNAPSE_DB_PASSWORD: ${SYNAPSE_DB_PASSWORD}     # lus par init-bases.sh
+      KEYCLOAK_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
+    volumes:
+      - postgres_donnees:/var/lib/postgresql/data
+      - ./postgres/init-bases.sh:/docker-entrypoint-initdb.d/init-bases.sh:ro
+    networks: [interne]
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  # Keycloak : comptes des agents, mot de passe + TOTP, rôles, ministères
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.8.1
+    restart: unless-stopped
+    # --import-realm : crée le realm « administration » au premier démarrage (ignoré ensuite)
+    command: ["start", "--import-realm"]
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
+      # Adresse publique (vue par le navigateur) : c'est aussi l'émetteur (« iss ») des jetons
+      KC_HOSTNAME: https://auth.messagerie.test
+      # Les appels de Synapse et de la console arrivent par http://keycloak:8080 (réseau interne)
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_HTTP_ENABLED: "true"           # HTTP en interne ; le HTTPS est assuré par Caddy
+      KC_PROXY_HEADERS: xforwarded      # faire confiance aux en-têtes X-Forwarded-* de Caddy
+      KC_HEALTH_ENABLED: "true"
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      # Valeurs injectées dans le fichier du realm (${...})
+      SYNAPSE_OIDC_SECRET: ${SYNAPSE_OIDC_SECRET}
+      CONSOLE_OIDC_SECRET: ${CONSOLE_OIDC_SECRET}
+    volumes:
+      - ./keycloak/realm-administration.json:/opt/keycloak/data/import/realm-administration.json:ro
+      - ./keycloak/themes/messagerie:/opt/keycloak/themes/messagerie:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [interne]
+    healthcheck:
+      # L'image n'a pas curl : on interroge /health/ready (port de gestion 9000) avec bash.
+      # Réponse « 200 » = prêt ; « 503 » = encore en démarrage.
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q 'HTTP/1.1 200' <&3"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+  # Synapse : serveur Matrix (il ne stocke que des messages chiffrés)
+  synapse:
+    image: matrixdotorg/synapse:v1.164.1
+    restart: unless-stopped
+    # Le volume /data est créé par root : on le donne à l'utilisateur de Synapse (991),
+    # puis on lance le script de démarrage officiel avec notre configuration.
+    entrypoint: ["/bin/sh", "-c", "chown 991:991 /data && exec /start.py run --config-path /config/homeserver.yaml"]
+    environment:
+      PGPASSWORD: ${SYNAPSE_DB_PASSWORD}   # lu directement par le pilote PostgreSQL
+      # La bibliothèque OIDC (authlib) refuse par défaut les adresses http://.
+      # Ici, le canal arrière Synapse -> Keycloak reste dans le réseau Docker interne,
+      # qui n'est pas joignable de l'extérieur (voir docs/fiche-oral.md).
+      AUTHLIB_INSECURE_TRANSPORT: "1"
+    secrets: [synapse_oidc, synapse_enregistrement]
+    volumes:
+      - ./synapse:/config:ro
+      - synapse_donnees:/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [interne]
+
+  # Element Web : l'application de messagerie (image officielle, seul config.json est fourni)
+  element:
+    image: vectorim/element-web:v1.12.33
+    restart: unless-stopped
+    volumes:
+      - ./element/config.json:/app/config.json:ro
+    networks: [interne]
+
+  # Caddy : seul service joignable depuis l'ordinateur, en HTTPS (CA interne)
+  caddy:
+    image: caddy:2.11.7-alpine
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:80:80"
+      - "127.0.0.1:443:443"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_donnees:/data              # contient la CA interne : à conserver
+    networks: [interne, externe]
+
+# Secrets montés en fichiers dans /run/secrets/, lus depuis le fichier .env
+secrets:
+  synapse_oidc:
+    environment: SYNAPSE_OIDC_SECRET
+  synapse_enregistrement:
+    environment: SYNAPSE_REGISTRATION_SECRET
+
+volumes:
+  postgres_donnees:
+  synapse_donnees:
+  caddy_donnees:
+
+networks:
+  # Réseau sans aucune sortie vers Internet : Synapse, Keycloak, PostgreSQL et Element
+  # ne peuvent physiquement contacter aucun service extérieur.
+  interne:
+    internal: true
+  # Réseau ordinaire, utilisé uniquement par Caddy pour publier les ports 80 et 443
+  externe: {}
