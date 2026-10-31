@@ -149,7 +149,8 @@ le rôle `agent` ; les canaux sont sur invitation et seule la console ajoute des
 
 1. https://admin.messagerie.test → connexion `admin.messagerie` + code TOTP.
    **À dire** : seul le rôle `admin-messagerie` entre ; la console n'a aucun JavaScript.
-2. **Écrans en mooré** (20 s) : sur la page de connexion Keycloak, sélecteur de langue → **Mooré**,
+2. **Écrans en mooré** (20 s, seulement si les 52 phrases sont traduites : une langue incomplète n'est
+   pas proposée, voir `traduction-moore/LISEZMOI.md`) : sur la page de connexion Keycloak, sélecteur de langue → **Mooré**,
    montrer les libellés traduits, revenir en français.
 3. **Enrôler un agent** : prénom `Fatimata`, nom `Ouédraogo-Démo`, ministère **Économie et Finances**,
    fonction `Comptable` → **Enrôler**. **À l'écran** : identifiant `fatimata.ouedraogo-demo` (sans

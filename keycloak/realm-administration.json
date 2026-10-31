@@ -32,7 +32,7 @@
   "ssoSessionMaxLifespan": 36000,
 
   "internationalizationEnabled": true,
-  "supportedLocales": ["fr", "mos"],
+  "supportedLocales": ["fr"],
   "defaultLocale": "fr",
   "loginTheme": "messagerie",
 
