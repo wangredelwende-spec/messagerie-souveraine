@@ -8,7 +8,7 @@
 #
 # Toutes les recherches se font sur l'ordinateur hôte (la phrase n'est pas transmise aux conteneurs),
 # sans tenir compte des majuscules, sous trois formes : texte UTF-8, texte échappé à la façon JSON
-# (« è » devient 00e8, comme dans les événements stockés par Synapse) et cette même forme avec
+# (« è » devient \u00e8, comme dans les événements stockés par Synapse) et cette même forme avec
 # les barres obliques doublées (format COPY du dump PostgreSQL).
 set -uo pipefail
 # Git Bash (Windows) : ne pas convertir /data/... en chemin Windows dans les commandes docker
