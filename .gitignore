@@ -20,3 +20,4 @@ preuves/
 .idea/
 Thumbs.db
 .DS_Store
+caddy-racine.crt
