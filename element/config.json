@@ -1,0 +1,65 @@
+{
+    "default_server_config": {
+        "m.homeserver": {
+            "base_url": "https://matrix.messagerie.test",
+            "server_name": "messagerie.test"
+        }
+    },
+    "disable_custom_urls": true,
+    "disable_guests": true,
+    "disable_3pid_login": true,
+    "sso_redirect_options": {
+        "immediate": true
+    },
+    "logout_redirect_url": "https://auth.messagerie.test/realms/administration/protocol/openid-connect/logout?client_id=synapse&post_logout_redirect_uri=https%3A%2F%2Fchat.messagerie.test%2F",
+
+    "brand": "Messagerie de l'administration",
+    "default_country_code": "BF",
+    "default_theme": "light",
+    "default_device_display_name": "Navigateur",
+    "default_federate": false,
+    "room_directory": {
+        "servers": ["messagerie.test"]
+    },
+    "branding": {
+        "logo_link_url": "https://chat.messagerie.test/"
+    },
+    "show_labs_settings": false,
+    "mobile_guide_toast": false,
+    "desktop_builds": {
+        "available": false
+    },
+    "enable_presence_by_hs_url": {
+        "https://matrix.messagerie.test": false
+    },
+
+    "enable_client_well_known_lookups": false,
+    "integrations_ui_url": null,
+    "integrations_rest_url": null,
+    "integrations_widgets_urls": [],
+    "jitsi": {
+        "preferred_domain": ""
+    },
+    "element_call": {
+        "disable": true
+    },
+
+    "setting_defaults": {
+        "language": "fr",
+        "urlPreviewsEnabled": false,
+        "urlPreviewsEnabled_e2ee": false,
+        "UIFeature.urlPreviews": false,
+        "UIFeature.feedback": false,
+        "UIFeature.voip": false,
+        "UIFeature.widgets": false,
+        "UIFeature.shareSocial": false,
+        "UIFeature.identityServer": false,
+        "UIFeature.thirdPartyId": false,
+        "UIFeature.registration": false,
+        "UIFeature.passwordReset": false,
+        "UIFeature.deactivate": false,
+        "UIFeature.locationSharing": false,
+        "UIFeature.allowCreatingPublicRooms": false,
+        "UIFeature.allowCreatingPublicSpaces": false
+    }
+}
