@@ -1,0 +1,252 @@
+{
+  "realm": "administration",
+  "displayName": "Messagerie de l'administration",
+  "enabled": true,
+  "sslRequired": "external",
+
+  "registrationAllowed": false,
+  "resetPasswordAllowed": false,
+  "rememberMe": false,
+  "loginWithEmailAllowed": false,
+  "editUsernameAllowed": false,
+  "verifyEmail": false,
+
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "failureFactor": 5,
+  "waitIncrementSeconds": 60,
+  "minimumQuickLoginWaitSeconds": 60,
+  "quickLoginCheckMilliSeconds": 1000,
+  "maxFailureWaitSeconds": 900,
+  "maxDeltaTimeSeconds": 43200,
+
+  "passwordPolicy": "length(12) and upperCase(1) and lowerCase(1) and digits(1) and specialChars(1) and notUsername and passwordHistory(3)",
+
+  "otpPolicyType": "totp",
+  "otpPolicyAlgorithm": "HmacSHA1",
+  "otpPolicyDigits": 6,
+  "otpPolicyPeriod": 30,
+  "otpPolicyLookAheadWindow": 1,
+
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+
+  "internationalizationEnabled": true,
+  "supportedLocales": ["fr", "mos"],
+  "defaultLocale": "fr",
+  "loginTheme": "messagerie",
+
+  "eventsEnabled": true,
+  "eventsExpiration": 604800,
+  "adminEventsEnabled": true,
+  "adminEventsDetailsEnabled": false,
+
+  "roles": {
+    "realm": [
+      { "name": "agent", "description": "Agent public autorisé à utiliser la messagerie" },
+      { "name": "admin-messagerie", "description": "Administrateur de la console d'administration" }
+    ]
+  },
+
+  "groups": [
+    { "name": "Ministère de la Santé", "attributes": { "code": ["sante"] } },
+    { "name": "Ministère de l'Économie et des Finances", "attributes": { "code": ["finances"] } },
+    { "name": "Ministère de la Transition digitale", "attributes": { "code": ["numerique"] } }
+  ],
+
+  "browserFlow": "navigateur-otp-obligatoire",
+  "authenticationFlows": [
+    {
+      "alias": "navigateur-otp-obligatoire",
+      "description": "Session existante (cookie) OU mot de passe + code TOTP, obligatoire pour tous",
+      "providerId": "basic-flow",
+      "topLevel": true,
+      "builtIn": false,
+      "authenticationExecutions": [
+        { "authenticator": "auth-cookie", "authenticatorFlow": false, "requirement": "ALTERNATIVE", "priority": 10, "userSetupAllowed": false },
+        { "authenticatorFlow": true, "flowAlias": "mot-de-passe-puis-otp", "requirement": "ALTERNATIVE", "priority": 20, "userSetupAllowed": false }
+      ]
+    },
+    {
+      "alias": "mot-de-passe-puis-otp",
+      "description": "Les deux étapes sont REQUISES : pas d'OTP conditionnel",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        { "authenticator": "auth-username-password-form", "authenticatorFlow": false, "requirement": "REQUIRED", "priority": 10, "userSetupAllowed": false },
+        { "authenticator": "auth-otp-form", "authenticatorFlow": false, "requirement": "REQUIRED", "priority": 20, "userSetupAllowed": false }
+      ]
+    }
+  ],
+
+  "clients": [
+    {
+      "clientId": "synapse",
+      "name": "Messagerie (Synapse)",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "${SYNAPSE_OIDC_SECRET}",
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": ["https://matrix.messagerie.test/_synapse/client/oidc/callback"],
+      "webOrigins": [],
+      "frontchannelLogout": false,
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "https://chat.messagerie.test/*",
+        "backchannel.logout.url": "http://synapse:8008/_synapse/client/oidc/backchannel_logout",
+        "backchannel.logout.session.required": "true"
+      },
+      "protocolMappers": [
+        {
+          "name": "roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "claim.name": "roles",
+            "multivalued": "true",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "console",
+      "name": "Console d'administration",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "${CONSOLE_OIDC_SECRET}",
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "redirectUris": ["https://admin.messagerie.test/auth/callback"],
+      "webOrigins": [],
+      "frontchannelLogout": false,
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "https://admin.messagerie.test/*"
+      },
+      "protocolMappers": [
+        {
+          "name": "roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "claim.name": "roles",
+            "multivalued": "true",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+
+  "components": {
+    "org.keycloak.userprofile.UserProfileProvider": [
+      {
+        "providerId": "declarative-user-profile",
+        "subComponents": {},
+        "config": {
+          "kc.user.profile.config": [
+            "{\"attributes\":[{\"name\":\"username\",\"displayName\":\"Identifiant\",\"validations\":{\"length\":{\"min\":3,\"max\":255},\"username-prohibited-characters\":{},\"up-username-not-idn-homograph\":{}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\"]},\"multivalued\":false},{\"name\":\"email\",\"displayName\":\"Adresse email\",\"validations\":{\"email\":{},\"length\":{\"max\":255}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\"]},\"multivalued\":false},{\"name\":\"firstName\",\"displayName\":\"Prénom\",\"validations\":{\"length\":{\"max\":255},\"person-name-prohibited-characters\":{}},\"required\":{\"roles\":[\"admin\",\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\"]},\"multivalued\":false},{\"name\":\"lastName\",\"displayName\":\"Nom\",\"validations\":{\"length\":{\"max\":255},\"person-name-prohibited-characters\":{}},\"required\":{\"roles\":[\"admin\",\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\"]},\"multivalued\":false},{\"name\":\"fonction\",\"displayName\":\"Fonction\",\"validations\":{\"length\":{\"max\":255}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\"]},\"multivalued\":false}],\"groups\":[{\"name\":\"user-metadata\",\"displayHeader\":\"User metadata\",\"displayDescription\":\"Attributes, which refer to user metadata\"}]}"
+          ]
+        }
+      }
+    ]
+  },
+
+  "users": [
+    {
+      "username": "awa.ouedraogo",
+      "enabled": true,
+      "firstName": "Awa",
+      "lastName": "Ouédraogo",
+      "attributes": { "fonction": ["Médecin-chef de district"] },
+      "credentials": [{ "type": "password", "value": "Agent-Demo-2026!", "temporary": false }],
+      "requiredActions": ["CONFIGURE_TOTP"],
+      "realmRoles": ["agent"],
+      "groups": ["/Ministère de la Santé"]
+    },
+    {
+      "username": "boukary.zongo",
+      "enabled": true,
+      "firstName": "Boukary",
+      "lastName": "Zongo",
+      "attributes": { "fonction": ["Responsable de la logistique"] },
+      "credentials": [{ "type": "password", "value": "Agent-Demo-2026!", "temporary": false }],
+      "requiredActions": ["CONFIGURE_TOTP"],
+      "realmRoles": ["agent"],
+      "groups": ["/Ministère de la Santé"]
+    },
+    {
+      "username": "issa.sawadogo",
+      "enabled": true,
+      "firstName": "Issa",
+      "lastName": "Sawadogo",
+      "attributes": { "fonction": ["Contrôleur financier"] },
+      "credentials": [{ "type": "password", "value": "Agent-Demo-2026!", "temporary": false }],
+      "requiredActions": ["CONFIGURE_TOTP"],
+      "realmRoles": ["agent"],
+      "groups": ["/Ministère de l'Économie et des Finances"]
+    },
+    {
+      "username": "mariam.kabore",
+      "enabled": true,
+      "firstName": "Mariam",
+      "lastName": "Kaboré",
+      "attributes": { "fonction": ["Cheffe de projet numérique"] },
+      "credentials": [{ "type": "password", "value": "Agent-Demo-2026!", "temporary": false }],
+      "requiredActions": ["CONFIGURE_TOTP"],
+      "realmRoles": ["agent"],
+      "groups": ["/Ministère de la Transition digitale"]
+    },
+    {
+      "username": "admin.messagerie",
+      "enabled": true,
+      "firstName": "Salimata",
+      "lastName": "Nikiéma",
+      "attributes": { "fonction": ["Administratrice de la messagerie"] },
+      "credentials": [{ "type": "password", "value": "Admin-Demo-2026!", "temporary": false }],
+      "requiredActions": ["CONFIGURE_TOTP"],
+      "realmRoles": ["admin-messagerie"],
+      "groups": ["/Ministère de la Transition digitale"]
+    },
+    {
+      "username": "stagiaire.sansrole",
+      "enabled": true,
+      "firstName": "Paul",
+      "lastName": "Yaméogo",
+      "attributes": { "fonction": ["Stagiaire (compte SANS le rôle agent, pour le test d'intrusion)"] },
+      "credentials": [{ "type": "password", "value": "Stagiaire-Demo-2026!", "temporary": false }],
+      "requiredActions": ["CONFIGURE_TOTP"],
+      "realmRoles": [],
+      "groups": ["/Ministère de la Santé"]
+    },
+    {
+      "username": "service-account-console",
+      "enabled": true,
+      "serviceAccountClientId": "console",
+      "clientRoles": {
+        "realm-management": ["manage-users", "view-users", "query-users", "query-groups", "view-realm"]
+      }
+    }
+  ]
+}
