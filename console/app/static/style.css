@@ -25,3 +25,6 @@ dd { margin: 0; }
 .formulaire input, .formulaire select { display: block; width: 100%; max-width: 30rem; padding: .4rem; font-size: 1rem; }
 .erreur { color: #a11; font-weight: bold; }
 .message { background: #d8f0e2; padding: .5rem 1rem; }
+.formulaire label.case { display: flex; gap: .5rem; align-items: center; margin: .25rem 0; }
+.formulaire label.case input { display: inline; width: auto; }
+fieldset { border: 1px solid #ccc; margin: .75rem 0; }

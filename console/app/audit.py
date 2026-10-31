@@ -30,6 +30,10 @@ class Journal:
                 BEGIN SELECT RAISE(ABORT, 'journal en ajout seul'); END;
             -- Canal institutionnel de chaque ministère (groupe Keycloak -> salon Matrix)
             CREATE TABLE IF NOT EXISTS canaux (ministere TEXT PRIMARY KEY, room_id TEXT NOT NULL);
+            -- Salons « Confidentiel » à expiration automatique créés par la console
+            CREATE TABLE IF NOT EXISTS salons_confidentiels (
+                room_id TEXT PRIMARY KEY, sujet TEXT NOT NULL, duree TEXT NOT NULL,
+                cree_par TEXT NOT NULL, cree_le TEXT NOT NULL);
         """)
 
     def ecrire(self, acteur: str, action: str, cible: str, resultat: str):
@@ -47,6 +51,13 @@ class Journal:
 
     def enregistrer_canal(self, id_ministere: str, room_id: str):
         self._db.execute("INSERT INTO canaux (ministere, room_id) VALUES (?, ?)", (id_ministere, room_id))
+
+    def enregistrer_salon_confidentiel(self, room_id: str, sujet: str, duree: str, cree_par: str):
+        self._db.execute("INSERT INTO salons_confidentiels VALUES (?, ?, ?, ?, ?)", (
+            room_id, sujet, duree, cree_par, datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")))
+
+    def salons_confidentiels(self) -> list[sqlite3.Row]:
+        return self._db.execute("SELECT * FROM salons_confidentiels ORDER BY cree_le DESC").fetchall()
 
     def dernieres_revocations(self) -> dict[str, str]:
         """Pour chaque agent, la dernière action de révocation réussie."""

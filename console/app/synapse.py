@@ -86,6 +86,40 @@ class Synapse:
         r.raise_for_status()
         return r.json()["room_id"]
 
+    async def creer_salon_confidentiel(self, nom: str, sujet: str, duree_ms: int) -> str:
+        """Salon « Confidentiel » : comme un canal (chiffré, sur invitation, historique « joined »),
+        plus une durée de vie des messages (m.room.retention) au-delà de laquelle Synapse les purge.
+        Tous les événements d'état (nom, rétention, règles d'accès, chiffrement, niveaux de pouvoir…)
+        exigent le niveau 100, que seul le compte de service possède : les membres ne peuvent ni
+        inviter, ni allonger la durée, ni ouvrir le salon."""
+        r = await self._http.post("/_matrix/client/v3/createRoom", json={
+            "name": nom,
+            "topic": sujet,
+            "preset": "private_chat",
+            "visibility": "private",
+            "initial_state": [
+                {"type": "m.room.encryption", "state_key": "", "content": {"algorithm": "m.megolm.v1.aes-sha2"}},
+                {"type": "m.room.history_visibility", "state_key": "", "content": {"history_visibility": "joined"}},
+                {"type": "m.room.guest_access", "state_key": "", "content": {"guest_access": "forbidden"}},
+                {"type": "m.room.retention", "state_key": "", "content": {"max_lifetime": duree_ms}},
+            ],
+            # Le compte de service est le créateur : dans les salons récents (version 12), le créateur a
+            # un pouvoir illimité et ne doit pas figurer dans « users ».
+            "power_level_content_override": {
+                "users_default": 0,
+                "events_default": 0,          # les membres peuvent écrire…
+                "state_default": 100,         # … mais aucun état ne peut être modifié par eux
+                "invite": 100, "kick": 100, "ban": 100, "redact": 100,
+                "events": {t: 100 for t in (
+                    "m.room.name", "m.room.topic", "m.room.retention", "m.room.join_rules",
+                    "m.room.encryption", "m.room.history_visibility", "m.room.guest_access",
+                    "m.room.power_levels", "m.room.avatar", "m.room.canonical_alias",
+                    "m.room.server_acl", "m.room.tombstone")},
+            },
+        })
+        r.raise_for_status()
+        return r.json()["room_id"]
+
     async def membres_canal(self, room_id: str) -> set[str]:
         r = await self._http.get(f"/_synapse/admin/v1/rooms/{quote(room_id, safe='')}/members")
         r.raise_for_status()

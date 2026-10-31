@@ -5,6 +5,7 @@
 <p>Un salon par ministère : chiffré de bout en bout, sur invitation, historique visible seulement à partir
    de l'arrivée. Seule la console y ajoute des membres ; elle ne peut lire aucun message.</p>
 {% if message %}<p class="message">{{ message }}</p>{% endif %}
+{% if erreur %}<p class="erreur">{{ erreur }}</p>{% endif %}
 <table>
   <thead><tr><th>Ministère</th><th>Salon</th><th>Agents actifs</th><th>Pas encore dans le canal</th><th></th></tr></thead>
   <tbody>
@@ -23,4 +24,42 @@
   {% endfor %}
   </tbody>
 </table>
+
+<h2>Salons « Confidentiel » à expiration automatique</h2>
+<p>Chiffrés, sur invitation, verrouillés : seule la console peut inviter ou modifier le salon.
+   Les messages sont purgés du serveur une fois leur durée de vie écoulée.</p>
+<table id="confidentiels">
+  <thead><tr><th>Salon</th><th>Durée de vie</th><th>Membres</th><th>Créé (UTC)</th></tr></thead>
+  <tbody>
+  {% for s in confidentiels %}
+    <tr>
+      <td>[CONFIDENTIEL] {{ s.sujet }}<br><code>{{ s.room_id }}</code></td>
+      <td>{{ s.duree }}</td>
+      <td>{{ s.membres | join(", ") or "—" }}</td>
+      <td>{{ s.cree_le }} par {{ s.cree_par }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="4">Aucun salon confidentiel.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<h3>Créer un salon Confidentiel</h3>
+<form method="post" action="/confidentiels" class="formulaire">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <label>Sujet (nom neutre : il est visible du serveur)
+    <input name="sujet" required maxlength="80" placeholder="ex. Réunion logistique"></label>
+  <label>Durée de vie des messages
+    <select name="duree" required>
+      {% for cle, d in durees.items() %}<option value="{{ cle }}">{{ d[0] }}</option>{% endfor %}
+    </select>
+  </label>
+  <fieldset>
+    <legend>Agents à inviter</legend>
+    {% for a in agents %}
+    <label class="case"><input type="checkbox" name="agents" value="{{ a.id }}"> {{ a.username }} ({{ a.firstName }} {{ a.lastName }})</label>
+    {% endfor %}
+  </fieldset>
+  <button class="bouton">Créer le salon</button>
+</form>
 {% endblock %}

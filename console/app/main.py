@@ -22,7 +22,7 @@ from .audit import Journal
 from .config import (CLIENT_ID, CONSOLE_URL, DONNEES, KEYCLOAK_INTERNE, KEYCLOAK_PUBLIC, REALM,
                      ROLE_ADMIN, lire_secret, matrix_id)
 from .keycloak import Keycloak
-from .synapse import Synapse
+from .synapse import COMPTE_SERVICE, Synapse
 
 SECRET_OIDC = lire_secret("console_oidc")
 keycloak = Keycloak(SECRET_OIDC)
@@ -310,7 +310,7 @@ async def etat_canaux() -> list[dict]:
 
 @app.get("/canaux")
 async def voir_canaux(request: Request, admin: str = Depends(exiger_admin)):
-    return page(request, "canaux.html", canaux=await etat_canaux())
+    return await page_canaux(request)
 
 
 @app.post("/canaux/{id_ministere}/synchroniser")
@@ -324,16 +324,89 @@ async def synchroniser_canal(request: Request, id_ministere: UUID, csrf: str = F
         raise HTTPException(404, "Ministère introuvable")
     ajoutes = 0
     for agent in canal["manquants"]:
-        user_id = matrix_id(agent["username"])
-        try:
-            if not await synapse.existe(user_id):
-                await synapse.creer_compte(user_id, f"{agent['firstName']} {agent['lastName']}", agent["id"])
-        except httpx.HTTPError as e:
-            journal.ecrire(admin, "canal-ajout", agent["username"], f"échec (compte Matrix) : {e}")
+        if await assurer_compte_matrix(agent, admin, "canal-ajout"):
+            ajoutes += await ajouter_au_canal(canal["ministere"], agent["username"], admin)
+    return await page_canaux(request,
+                             message=f"{canal['ministere']['name']} : {ajoutes} agent(s) ajouté(s) au canal.")
+
+
+async def assurer_compte_matrix(agent: dict, admin: str, action: str) -> bool:
+    """Pré-crée le compte Matrix d'un agent qui ne s'est jamais connecté (lié à son sub Keycloak)."""
+    user_id = matrix_id(agent["username"])
+    try:
+        if not await synapse.existe(user_id):
+            await synapse.creer_compte(user_id, f"{agent['firstName']} {agent['lastName']}", agent["id"])
+    except httpx.HTTPError as e:
+        journal.ecrire(admin, action, agent["username"], f"échec (compte Matrix) : {e}")
+        return False
+    return True
+
+
+# --- Salons « Confidentiel » à expiration automatique ---
+
+# Durée de vie des messages proposée dans le formulaire : (libellé, millisecondes)
+DUREES = {
+    "5min": ("5 minutes (démonstration)", 5 * 60_000),
+    "1j": ("1 jour", 86_400_000),
+    "7j": ("7 jours", 7 * 86_400_000),
+    "30j": ("30 jours", 30 * 86_400_000),
+}
+# Réservée au test automatique : acceptée mais absente du formulaire
+DUREE_TEST = {"1min": ("1 minute (test)", 60_000)}
+
+
+async def agents_invitables() -> list[dict]:
+    """Agents actifs ayant le rôle « agent », pour le formulaire d'invitation."""
+    role_agent = await keycloak.ids_role_agent()
+    return sorted((a for a in await keycloak.agents() if a["id"] in role_agent and a.get("enabled")),
+                  key=lambda a: a["username"])
+
+
+async def page_canaux(request: Request, statut_http: int = 200, **contexte):
+    confidentiels = []
+    for salon in journal.salons_confidentiels():
+        membres = await synapse.membres_canal(salon["room_id"])
+        membres.discard(matrix_id(COMPTE_SERVICE))
+        confidentiels.append({**dict(salon), "membres": sorted(m.split(":")[0][1:] for m in membres)})
+    return page(request, "canaux.html", statut_http, canaux=await etat_canaux(), confidentiels=confidentiels,
+                agents=await agents_invitables(), durees=DUREES, **contexte)
+
+
+@app.post("/confidentiels")
+async def creer_salon_confidentiel(request: Request, csrf: str = Form(...), sujet: str = Form(""),
+                                   duree: str = Form(""), agents: list[str] = Form([]),
+                                   admin: str = Depends(exiger_admin)):
+    verifier_csrf(request, csrf)
+    sujet = sujet.strip()
+    choix = {a["id"]: a for a in await agents_invitables()}
+    invites = [choix[i] for i in dict.fromkeys(agents) if i in choix]
+    libelle, duree_ms = (DUREES | DUREE_TEST).get(duree, (None, None))
+    if not sujet or len(sujet) > 80 or not libelle or not invites:
+        return await page_canaux(request, 400, erreur="Indiquez un sujet (80 caractères au plus), "
+                                 "une durée et au moins un agent.")
+    nom = f"[CONFIDENTIEL] {sujet}"
+    try:
+        room_id = await synapse.creer_salon_confidentiel(
+            nom, f"Salon confidentiel : les messages sont effacés automatiquement après {libelle}.", duree_ms)
+    except httpx.HTTPError as e:
+        journal.ecrire(admin, "confidentiel-creation", nom, f"échec : {e}")
+        return await page_canaux(request, 502, erreur="La création du salon a échoué.")
+    journal.enregistrer_salon_confidentiel(room_id, sujet, libelle, admin)
+    journal.ecrire(admin, "confidentiel-creation", nom,
+                   f"ok ; durée : {libelle} ; membres : {', '.join(a['username'] for a in invites)}")
+    ajoutes = 0
+    for agent in invites:
+        if not await assurer_compte_matrix(agent, admin, "confidentiel-ajout"):
             continue
-        ajoutes += await ajouter_au_canal(canal["ministere"], agent["username"], admin)
-    return page(request, "canaux.html", canaux=await etat_canaux(),
-                message=f"{canal['ministere']['name']} : {ajoutes} agent(s) ajouté(s) au canal.")
+        try:
+            await synapse.ajouter_au_canal(room_id, matrix_id(agent["username"]))
+        except httpx.HTTPError as e:
+            journal.ecrire(admin, "confidentiel-ajout", agent["username"], f"échec ({nom}) : {e}")
+            continue
+        journal.ecrire(admin, "confidentiel-ajout", agent["username"], f"ok ({nom})")
+        ajoutes += 1
+    return await page_canaux(request, message=f"Salon « {nom} » créé ({room_id}) : {ajoutes} membre(s) "
+                             f"sur {len(invites)}, messages effacés après {libelle}.")
 
 
 @app.get("/agents/{id_agent}")
