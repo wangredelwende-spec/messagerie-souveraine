@@ -61,7 +61,10 @@ TOTP avec une application open source (Aegis ou FreeOTP) : scanner le QR code, p
 | `admin.messagerie` | `Admin-Demo-2026!` | Transition digitale | Administratrice de la messagerie | admin-messagerie |
 | `stagiaire.sansrole` | `Stagiaire-Demo-2026!` | Santé | Stagiaire | *aucun* : refusé par Synapse (test d'intrusion) |
 
-Console technique Keycloak : https://auth.messagerie.test/admin (compte `admin`, mot de passe `KEYCLOAK_ADMIN_PASSWORD` du `.env`).
+La console technique Keycloak (`/admin`) et le realm `master` ne sont pas publiés (404). Administration
+technique depuis le réseau interne uniquement, par exemple :
+`docker compose exec keycloak /opt/keycloak/bin/kcadm.sh config credentials --server http://keycloak:8080 --realm master --user admin`
+(mot de passe `KEYCLOAK_ADMIN_PASSWORD` du `.env`).
 
 ## Limites
 

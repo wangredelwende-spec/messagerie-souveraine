@@ -47,7 +47,16 @@ matrix.messagerie.test {
 }
 
 # Keycloak : connexion des agents (mot de passe + code TOTP)
+# La console technique (/admin) et le realm « master » ne sont PAS publiés :
+# la console d'administration et les scripts passent par http://keycloak:8080
+# dans le réseau Docker interne.
 auth.messagerie.test {
 	import securite
-	reverse_proxy keycloak:8080
+	@interdit path /admin* /realms/master*
+	handle @interdit {
+		respond "Introuvable" 404
+	}
+	handle {
+		reverse_proxy keycloak:8080
+	}
 }
