@@ -5,7 +5,11 @@ Toutes les données et tous les comptes sont fictifs.
 
 ## Concept
 
-<!-- à rédiger par Enock -->
+Griot Secure est une messagerie instantanée pour les agents de l'administration publique du Burkina Faso. Les agents s'écrivent, créent des groupes et partagent des fichiers, comme sur les applications du marché.
+
+Mais ici, le serveur est installé chez l'État, les messages sont chiffrés de bout en bout (même le serveur ne peut pas les lire), et seuls les agents inscrits par l'administration peuvent entrer, avec un mot de passe et un code à six chiffres. Si un agent quitte l'administration ou perd son téléphone, il est bloqué en un clic, sur tous ses appareils.
+
+Le nom vient du griot, qui porte la parole de confiance.
 
 ## Architecture
 
@@ -17,7 +21,15 @@ _À compléter (phase 4). Détail dans `docs/technologies.md`._
 
 ## Niveau d'engagement
 
-<!-- à rédiger par Enock -->
+**Étendre et adapter.**
+
+Nous n'avons pas créé de messagerie de zéro. Nous avons utilisé Element et Synapse, deux logiciels open source qui existent déjà et que nous n'avons pas modifiés dans leur code.
+
+Nous n'avons écrit aucune cryptographie : le chiffrement des messages est celui d'Element.
+
+Nous les avons installés et configurés pour l'administration : le chiffrement est obligatoire dans tous les salons et personne ne peut s'inscrire seul.
+
+Nous avons ajouté notre propre console d'administration, qui permet d'inscrire un agent, de le bloquer et de consulter un journal des actions. Nous avons aussi ajouté des salons « Confidentiel », dont les messages sont effacés automatiquement du serveur.
 
 ## Installation
 
