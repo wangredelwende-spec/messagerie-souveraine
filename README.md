@@ -7,17 +7,37 @@ Toutes les données et tous les comptes sont fictifs.
 
 Griot Secure est une messagerie instantanée pour les agents de l'administration publique du Burkina Faso. Les agents s'écrivent, créent des groupes et partagent des fichiers, comme sur les applications du marché.
 
-Mais ici, le serveur est installé chez l'État, les messages sont chiffrés de bout en bout (même le serveur ne peut pas les lire), et seuls les agents inscrits par l'administration peuvent entrer, avec un mot de passe et un code à six chiffres. Si un agent quitte l'administration ou perd son téléphone, il est bloqué en un clic, sur tous ses appareils.
+Mais ici, le serveur est installé chez l'État, les messages sont chiffrés de bout en bout (même le serveur ne peut pas les lire), et seuls les agents inscrits par l'administration peuvent entrer, avec un mot de passe et un code à six chiffres. Si un agent quitte l'administration ou perd son téléphone, ses accès sont coupés en un clic, sur tous ses appareils.
 
 Le nom vient du griot, qui porte la parole de confiance.
 
 ## Architecture
 
-_À compléter (phase 4)._
+```
+Navigateur de l'agent ──HTTPS──► Caddy (seule porte d'entrée, port 443)
+                                  ├─► Element Web : l'application ; le chiffrement se fait sur l'appareil
+                                  ├─► Synapse + PostgreSQL : serveur Matrix, ne stocke que du chiffré
+                                  ├─► Keycloak : identités, mot de passe + TOTP, rôles, ministères
+                                  └─► Console d'administration : enrôlement, annuaire, révocation, audit
+```
+
+Réseau Docker interne sans accès à Internet ; seul Caddy est exposé. Fédération Matrix coupée : aucune donnée ne quitte le serveur de l'État.
 
 ## Technologies et licences
 
-_À compléter (phase 4). Détail dans `docs/technologies.md`._
+- **Synapse** 1.164.1, serveur Matrix — AGPL-3.0 — https://github.com/element-hq/synapse
+- **Element Web** 1.12.33, client — AGPL-3.0 ou GPL-3.0 — https://github.com/element-hq/element-web
+- **matrix-sdk-crypto**, chiffrement Olm/Megolm intégré à Element — Apache-2.0 — https://github.com/matrix-org/matrix-rust-sdk
+- **Keycloak** 26.8.1, identités, TOTP, rôles — Apache-2.0 — https://github.com/keycloak/keycloak
+- **PostgreSQL** 17, base de données — PostgreSQL License — https://www.postgresql.org
+- **Caddy** 2.11, HTTPS et autorité de certification interne — Apache-2.0 — https://github.com/caddyserver/caddy
+- **Docker Compose**, déploiement — Apache-2.0 — https://github.com/docker/compose
+- **FastAPI**, console — MIT — https://github.com/fastapi/fastapi
+- **Uvicorn, Jinja2, httpx, Authlib, itsdangerous**, console — BSD-3-Clause ; **python-multipart** — Apache-2.0 — dépôts GitHub `encode/uvicorn`, `pallets/jinja`, `encode/httpx`, `authlib/authlib`, `pallets/itsdangerous`, `Kludex/python-multipart`
+- **pyotp**, tests automatisés — MIT — https://github.com/pyauth/pyotp
+- **Aegis** / **FreeOTP**, applications TOTP des agents — GPL-3.0 / Apache-2.0 — https://github.com/beemdevelopment/Aegis · https://github.com/freeotp/freeotp-android
+
+Notre code est publié sous **AGPL-3.0**.
 
 ## Niveau d'engagement
 
@@ -80,7 +100,12 @@ technique depuis le réseau interne uniquement, par exemple :
 
 ## Limites
 
-_À compléter (phase 4)._
+- **Appareil volé encore ouvert :** la révocation coupe l'accès au serveur et aux nouveaux messages ; ce qui est déjà sur l'appareil peut rester lisible.
+- **Captures d'écran et transferts :** impossibles à bloquer dans un navigateur. Salons Confidentiel : la purge a lieu sur le serveur, pas sur les appareils.
+- **Métadonnées :** le serveur voit qui échange avec qui et quand, la taille des messages et des fichiers, les noms des salons et les adresses IP (conservées 1 jour). Détail : `docs/elements-securite.md`.
+- **Client web :** clés stockées dans le navigateur ; un poste infecté ou un serveur qui sert un client modifié compromet les messages. En production : application signée.
+- **Langues :** seuls les écrans de connexion sont traduits en mooré ; l'application Element reste en français.
+- **Prototype :** un seul serveur, sans haute disponibilité ni sauvegarde automatique ; autorité de certification et secrets de démonstration, à remplacer par ceux de l'État ; liaisons internes (Synapse, console, Keycloak) en HTTP dans le réseau Docker.
 
 ## Licence
 
