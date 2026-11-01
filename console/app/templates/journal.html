@@ -2,13 +2,17 @@
 {% block titre %}Journal d'audit{% endblock %}
 {% block contenu %}
 <h1>Journal d'audit</h1>
-<p>Qui, quoi, quand, sur quel agent. Aucun contenu de message n'y figure.</p>
-<table>
-  <thead><tr><th>Date (UTC)</th><th>Administrateur</th><th>Action</th><th>Agent</th><th>Résultat</th></tr></thead>
+<p class="aide">Qui, quoi, quand, sur quel agent, du plus récent au plus ancien. Aucun contenu de message n'y figure.</p>
+<div class="defile">
+<table class="journal">
+  <thead><tr><th scope="col">Date (UTC)</th><th scope="col">Administrateur</th><th scope="col">Action</th><th scope="col">Agent</th><th scope="col">Résultat</th></tr></thead>
   <tbody>
   {% for l in lignes %}
     <tr><td>{{ l.horodatage }}</td><td>{{ l.acteur }}</td><td>{{ l.action }}</td><td>{{ l.cible }}</td><td>{{ l.resultat }}</td></tr>
+  {% else %}
+    <tr><td colspan="5">Aucune action enregistrée.</td></tr>
   {% endfor %}
   </tbody>
 </table>
+</div>
 {% endblock %}

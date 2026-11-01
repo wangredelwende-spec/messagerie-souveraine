@@ -2,7 +2,9 @@
 {% block titre %}{{ action.titre }}{% endblock %}
 {% block contenu %}
 <h1>{{ action.titre }} : {{ agent.username }}</h1>
-<ul>{% for l in compte_rendu %}<li>{{ l }}</li>{% endfor %}</ul>
+<div class="message" role="status">
+  <ul>{% for l in compte_rendu %}<li>{{ l }}</li>{% endfor %}</ul>
+</div>
 <p>Statut : <span class="statut {{ agent.statut }}">{{ statuts[agent.statut] }}</span></p>
 {% if mot_de_passe %}
 <div class="secret">

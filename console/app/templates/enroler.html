@@ -2,21 +2,24 @@
 {% block titre %}Enrôler un agent{% endblock %}
 {% block contenu %}
 <h1>Enrôler un agent</h1>
-{% if erreur %}<p class="erreur">{{ erreur }}</p>{% endif %}
+{% if erreur %}<p class="erreur" role="alert">{{ erreur }}</p>{% endif %}
 <form method="post" action="/enroler" class="formulaire">
   <input type="hidden" name="csrf" value="{{ csrf }}">
-  <label>Prénom <input name="prenom" required maxlength="100" value="{{ valeurs.prenom }}"></label>
-  <label>Nom <input name="nom" required maxlength="100" value="{{ valeurs.nom }}"></label>
-  <label>Ministère
-    <select name="ministere" required>
-      <option value="">— choisir —</option>
-      {% for m in ministeres %}
-      <option value="{{ m.id }}" {% if m.id == valeurs.ministere %}selected{% endif %}>{{ m.name }}</option>
-      {% endfor %}
-    </select>
-  </label>
-  <label>Fonction <input name="fonction" required maxlength="100" value="{{ valeurs.fonction }}"></label>
-  <p>L'agent recevra le rôle « agent ». À sa première connexion, il devra changer le mot de passe
+  <label for="prenom">Prénom</label>
+  <input id="prenom" name="prenom" required maxlength="100" value="{{ valeurs.prenom }}" autocomplete="off">
+  <label for="nom">Nom</label>
+  <input id="nom" name="nom" required maxlength="100" value="{{ valeurs.nom }}" autocomplete="off">
+  <label for="ministere">Ministère</label>
+  <select id="ministere" name="ministere" required aria-describedby="aide-ministere">
+    <option value="">— choisir —</option>
+    {% for m in ministeres %}
+    <option value="{{ m.id }}" {% if m.id == valeurs.ministere %}selected{% endif %}>{{ m.name }}</option>
+    {% endfor %}
+  </select>
+  <p class="aide" id="aide-ministere">L'agent est ajouté automatiquement au canal de ce ministère.</p>
+  <label for="fonction">Fonction</label>
+  <input id="fonction" name="fonction" required maxlength="100" value="{{ valeurs.fonction }}" autocomplete="off">
+  <p class="note">L'agent recevra le rôle « agent ». À sa première connexion, il devra changer le mot de passe
      temporaire puis enrôler un code TOTP (Aegis ou FreeOTP).</p>
   <button class="bouton">Enrôler</button>
 </form>

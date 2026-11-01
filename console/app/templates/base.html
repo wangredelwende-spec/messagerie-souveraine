@@ -3,22 +3,29 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block titre %}Agents{% endblock %} · Console de la messagerie</title>
+  <title>{% block titre %}Agents{% endblock %} · Griot Secure, console d'administration</title>
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-  <header>
-    <strong>Console d'administration de la messagerie</strong>
-    {% if admin %}
-    <nav>
-      <a href="/">Annuaire</a>
-      <a href="/enroler">Enrôler un agent</a>
-      <a href="/canaux">Canaux</a>
-      <a href="/journal">Journal d'audit</a>
-      <form method="post" action="/deconnexion">
+  {# Onglet actif : déduit de l'adresse de la page (la fiche d'un agent appartient à l'Annuaire) #}
+  {% set chemin = request.url.path %}
+  <header class="entete">
+    <div class="entete-haut">
+      <p class="marque"><strong>Griot Secure</strong> <span>Console d'administration</span></p>
+      {% if admin %}
+      <form method="post" action="/deconnexion" class="deconnexion">
         <input type="hidden" name="csrf" value="{{ csrf }}">
-        <button>Se déconnecter ({{ admin }})</button>
+        <span class="connecte">{{ admin }}</span>
+        <button>Se déconnecter</button>
       </form>
+      {% endif %}
+    </div>
+    {% if admin %}
+    <nav aria-label="Menu principal">
+      <a href="/" {% if chemin == "/" or chemin.startswith("/agents") %}aria-current="page"{% endif %}>Annuaire</a>
+      <a href="/enroler" {% if chemin.startswith("/enroler") %}aria-current="page"{% endif %}>Enrôler un agent</a>
+      <a href="/canaux" {% if chemin.startswith("/canaux") or chemin.startswith("/confidentiels") %}aria-current="page"{% endif %}>Canaux</a>
+      <a href="/journal" {% if chemin.startswith("/journal") %}aria-current="page"{% endif %}>Journal d'audit</a>
     </nav>
     {% endif %}
   </header>

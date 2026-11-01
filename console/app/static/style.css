@@ -1,30 +1,177 @@
-body { margin: 0; font-family: system-ui, sans-serif; color: #1a1a1a; background: #f6f6f4; }
-header { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-between; align-items: center;
-         padding: .75rem 1rem; background: #00563f; color: #fff; }
-header a, header button { color: #fff; }
-nav { display: flex; gap: 1rem; align-items: center; }
-nav form { margin: 0; }
-nav button { background: none; border: 1px solid #fff; border-radius: 4px; padding: .3rem .6rem; cursor: pointer; }
-main { max-width: 60rem; margin: 0 auto; padding: 1rem; }
-table { width: 100%; border-collapse: collapse; background: #fff; }
-th, td { text-align: left; padding: .5rem; border-bottom: 1px solid #ddd; }
-dt { font-weight: bold; margin-top: .5rem; }
-dd { margin: 0; }
-.statut { padding: .1rem .5rem; border-radius: 1rem; font-size: .9em; }
-.statut.actif { background: #d8f0e2; }
-.statut.suspendu { background: #fde8c4; }
-.statut.revoque { background: #f6d2d2; }
-.actions { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: .5rem; }
-.bouton { display: inline-block; padding: .5rem 1rem; border: 0; border-radius: 4px; color: #fff;
-          background: #00563f; text-decoration: none; font-size: 1rem; cursor: pointer; }
-.bouton.depart { background: #a11; }
-.bouton.perte-appareil { background: #b35c00; }
-.secret { background: #fff; border: 2px solid #b35c00; padding: 1rem; }
-.secret code { font-size: 1.3rem; user-select: all; }
-.formulaire label { display: block; margin: .75rem 0; }
-.formulaire input, .formulaire select { display: block; width: 100%; max-width: 30rem; padding: .4rem; font-size: 1rem; }
-.erreur { color: #a11; font-weight: bold; }
-.message { background: #d8f0e2; padding: .5rem 1rem; }
-.formulaire label.case { display: flex; gap: .5rem; align-items: center; margin: .25rem 0; }
-.formulaire label.case input { display: inline; width: auto; }
-fieldset { border: 1px solid #ccc; margin: .75rem 0; }
+/* Console d'administration : style sobre, polices système, aucune ressource externe. */
+
+:root {
+  --texte: #1b1f23;
+  --texte-doux: #4a5560;
+  --fond: #f4f5f3;
+  --surface: #fff;
+  --trait: #d5d9dd;
+  --vert: #00563f;          /* couleur institutionnelle (en-tête) */
+  --neutre: #33414d;        /* boutons ordinaires */
+  --rouge: #b42318;         /* Départ : définitif */
+  --orange: #b54708;        /* Perte d'appareil */
+  --focus: #1d70b8;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; font: 1rem/1.5 system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif;
+       color: var(--texte); background: var(--fond); }
+main { max-width: 68rem; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+h1 { font-size: 1.6rem; margin: .5rem 0 1rem; }
+h2 { font-size: 1.2rem; margin: 2rem 0 .75rem; }
+h3 { font-size: 1.1rem; margin: 0 0 .75rem; }
+a { color: #0b4f8a; }
+code { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: .9em; overflow-wrap: anywhere; }
+
+/* Focus visible au clavier sur tous les éléments interactifs */
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+/* --- En-tête --- */
+.entete { background: var(--vert); color: #fff; }
+.entete-haut { max-width: 68rem; margin: 0 auto; padding: .75rem 1rem .25rem; display: flex; flex-wrap: wrap;
+               gap: .5rem 1rem; justify-content: space-between; align-items: center; }
+.marque { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: .25rem .75rem; }
+.marque strong { font-size: 1.3rem; letter-spacing: .01em; }
+.marque span { font-size: .95rem; opacity: .9; }
+.deconnexion { margin: 0; display: flex; align-items: center; gap: .5rem; font-size: .9rem; }
+.deconnexion .connecte { opacity: .9; }
+.deconnexion button { background: none; border: 1px solid rgba(255, 255, 255, .6); color: #fff; border-radius: 4px;
+                      padding: .2rem .6rem; font: inherit; cursor: pointer; }
+.deconnexion button:hover { background: rgba(255, 255, 255, .12); }
+.entete nav { max-width: 68rem; margin: 0 auto; padding: 0 1rem; display: flex; flex-wrap: wrap; gap: .25rem; }
+.entete nav a { color: #fff; text-decoration: none; padding: .6rem .9rem; border-bottom: 4px solid transparent; }
+.entete nav a:hover { border-bottom-color: rgba(255, 255, 255, .5); }
+.entete nav a[aria-current="page"] { font-weight: 600; border-bottom-color: #fff; }
+.entete :focus-visible { outline-color: #ffdd00; }
+
+/* --- Textes d'aide et notes --- */
+.aide { color: var(--texte-doux); font-size: .95rem; margin: .25rem 0 1rem; max-width: 48rem; }
+.note { background: var(--surface); border-left: 4px solid var(--trait); padding: .6rem 1rem; max-width: 48rem; }
+.fil { margin: 0; font-size: .95rem; }
+
+/* --- Messages de succès et d'erreur --- */
+.message, .erreur { border-radius: 4px; padding: .75rem 1rem; margin: 1rem 0; border-left: 6px solid; max-width: 48rem; }
+.message { background: #e6f4ea; border-color: #1e7b45; color: #0f3d22; }
+.erreur { background: #fdecea; border-color: var(--rouge); color: #7a1b13; font-weight: 600; }
+.message::before { content: "✓ "; font-weight: 700; }
+.erreur > :first-child::before, p.erreur::before { content: "⚠ "; }
+.message p, .erreur p, .message ul, .erreur ul { margin: .25rem 0; }
+.message:has(ul)::before { content: none; }
+
+/* --- Tableaux --- */
+.defile { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; background: var(--surface); }
+th, td { text-align: left; padding: .7rem .8rem; border-bottom: 1px solid var(--trait); vertical-align: top; }
+th { font-size: .85rem; text-transform: uppercase; letter-spacing: .03em; color: var(--texte-doux);
+     background: #eef0ee; }
+tbody tr:last-child td { border-bottom: 0; }
+
+/* --- Pastilles de statut --- */
+.statut { display: inline-block; padding: .1rem .65rem; border-radius: 1rem; font-size: .88rem; font-weight: 600;
+          border: 1px solid; white-space: nowrap; }
+.statut.actif { background: #dcf3e5; color: #0b5130; border-color: #9fd3b4; }
+.statut.suspendu { background: #fdebd2; color: #7a3500; border-color: #f0bd85; }
+.statut.revoque { background: #e9eaec; color: #3d434a; border-color: #c4c8cd; }
+
+/* --- Annuaire : résumé et blocs par ministère --- */
+.resume { list-style: none; padding: 0; margin: 0 0 1.5rem; display: flex; flex-wrap: wrap; gap: .75rem; }
+.resume li { background: var(--surface); border: 1px solid var(--trait); border-radius: 6px; padding: .6rem 1rem;
+             display: flex; align-items: center; gap: .6rem; }
+.resume .nombre { font-size: 1.5rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.bloc { background: var(--surface); border: 1px solid var(--trait); border-radius: 6px; padding: 1rem 1.25rem;
+        margin: 0 0 1.25rem; }
+.bloc h2 { margin: 0 0 .5rem; padding-bottom: .5rem; border-bottom: 2px solid var(--vert); }
+.bloc table th { background: none; }
+/* Mêmes largeurs de colonnes dans tous les ministères */
+.bloc table { table-layout: fixed; min-width: 34rem; }
+.bloc th:nth-child(1) { width: 38%; }
+.bloc th:nth-child(2) { width: 24%; }
+.bloc th:nth-child(3) { width: 24%; }
+.bloc th:nth-child(4) { width: 14%; }
+
+/* --- Fiche d'un agent --- */
+.fiche { display: grid; grid-template-columns: max-content 1fr; gap: .5rem 1.5rem; background: var(--surface);
+         border: 1px solid var(--trait); border-radius: 6px; padding: 1rem 1.25rem; max-width: 40rem; }
+.fiche dt { font-weight: 600; color: var(--texte-doux); }
+.fiche dd { margin: 0; }
+
+/* --- Boutons : neutres par défaut, couleur seulement pour les actions dangereuses --- */
+.bouton { display: inline-block; padding: .6rem 1.2rem; border: 2px solid var(--neutre); border-radius: 4px; color: #fff;
+          background: var(--neutre); text-decoration: none; font: inherit; font-weight: 600; cursor: pointer;
+          line-height: 1.3; }
+.bouton:hover { background: #222c35; border-color: #222c35; }
+.bouton.secondaire, .bouton.reactiver { background: var(--surface); color: var(--neutre); }
+.bouton.secondaire:hover, .bouton.reactiver:hover { background: #e8ebee; }
+.bouton.depart { background: var(--rouge); border-color: var(--rouge); }
+.bouton.depart:hover { background: #8f1c13; border-color: #8f1c13; }
+.bouton.perte-appareil { background: var(--orange); border-color: var(--orange); }
+.bouton.perte-appareil:hover { background: #8f3806; border-color: #8f3806; }
+.actions { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: .75rem; }
+.boutons { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; margin-top: 1rem; }
+
+/* Page de confirmation : rappel des effets, bordé de la couleur de l'action */
+.avertissement { background: var(--surface); border: 1px solid var(--trait); border-left: 6px solid var(--neutre);
+                 border-radius: 4px; padding: .5rem 1.25rem; max-width: 48rem; }
+.avertissement.depart { border-left-color: var(--rouge); }
+.avertissement.perte-appareil { border-left-color: var(--orange); }
+
+/* Mot de passe temporaire affiché une seule fois */
+.secret { background: #fff8eb; border: 2px solid var(--orange); border-radius: 6px; padding: 1rem 1.25rem; max-width: 40rem; }
+.secret p { margin-top: 0; }
+.secret code { display: inline-block; font-size: 1.4rem; padding: .3rem .6rem; background: var(--surface);
+               border: 1px dashed var(--orange); user-select: all; }
+
+/* --- Formulaires --- */
+.formulaire { max-width: 36rem; }
+.formulaire > label, .formulaire fieldset > legend { display: block; font-weight: 600; margin: 1.1rem 0 .3rem; }
+.formulaire input:not([type]), .formulaire input[type="text"], .formulaire select {
+  display: block; width: 100%; padding: .6rem .7rem; font: inherit; color: var(--texte); background: var(--surface);
+  border: 2px solid #6b7680; border-radius: 4px; }
+.formulaire input:focus-visible, .formulaire select:focus-visible { border-color: var(--focus); }
+.formulaire .aide { margin: .3rem 0 0; }
+.formulaire .note { margin: 1.25rem 0; }
+.formulaire fieldset { border: 1px solid var(--trait); border-radius: 4px; margin: 1.1rem 0; padding: .25rem 1rem .75rem; }
+.formulaire fieldset > legend { padding: 0 .3rem; margin: 0; }
+.formulaire fieldset .aide { margin-bottom: .5rem; }
+.formulaire label.case { display: flex; gap: .6rem; align-items: center; padding: .35rem 0; font-weight: normal; }
+.formulaire label.case input { width: 1.2rem; height: 1.2rem; margin: 0; accent-color: var(--neutre); }
+.formulaire .bouton { margin-top: .5rem; }
+
+/* --- Canaux : tableaux présentés en cartes --- */
+table.cartes, table.cartes tbody { display: block; background: none; }
+table.cartes thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+table.cartes tbody { display: grid; grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+table.cartes tr { display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--trait);
+                  border-radius: 6px; padding: .9rem 1.1rem; }
+table.cartes td { display: block; border: 0; padding: .2rem 0; }
+table.cartes td:first-child { font-weight: 700; font-size: 1.05rem; padding-bottom: .4rem; }
+table.cartes td:first-child code { font-weight: normal; font-size: .8rem; color: var(--texte-doux); }
+table.cartes td:empty { display: none; }
+table.canaux tr { border-top: 4px solid var(--vert); }
+table.canaux td:nth-child(2) code { font-size: .8rem; color: var(--texte-doux); }
+table.canaux td:nth-child(3)::before { content: "Agents actifs : "; color: var(--texte-doux); }
+table.canaux td:nth-child(4)::before { content: "Pas encore dans le canal : "; color: var(--texte-doux); }
+table.canaux td:nth-child(5) { padding-top: .6rem; }
+table.canaux form { margin: 0; }
+table.confidentiels tr { border-top: 4px solid var(--orange); }
+table.confidentiels td:nth-child(2)::before { content: "Durée de vie : "; color: var(--texte-doux); }
+table.confidentiels td:nth-child(3)::before { content: "Membres : "; color: var(--texte-doux); }
+table.confidentiels td:nth-child(4)::before { content: "Créé (UTC) : "; color: var(--texte-doux); }
+
+/* --- Journal d'audit : lignes alternées, action en pastille --- */
+table.journal td { border-bottom: 0; }
+table.journal tbody tr:nth-child(even) { background: #f1f3f1; }
+table.journal td:first-child { white-space: nowrap; font-variant-numeric: tabular-nums; }
+/* Cellule « Action » affichée en pastille : en bloc en ligne, elle garde la hauteur de son texte
+   même quand une autre cellule de la ligne passe sur plusieurs lignes */
+table.journal tbody td:nth-child(3) { display: inline-block; margin: .55rem .5rem; padding: .15rem .7rem;
+  border-radius: 1rem; background: #e3ecf4; color: #1f3a52; font-size: .9rem; font-weight: 600; white-space: nowrap; }
+
+/* Écrans étroits (ou zoom fort) */
+@media (max-width: 40rem) {
+  main { padding: 1rem .75rem 2rem; }
+  .bloc { padding: .75rem; }
+  .fiche { grid-template-columns: 1fr; gap: .1rem; }
+  .fiche dd { margin-bottom: .5rem; }
+  .entete nav a { padding: .5rem .6rem; }
+}

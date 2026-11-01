@@ -2,7 +2,9 @@
 {% block titre %}Erreur{% endblock %}
 {% block contenu %}
 <h1>Erreur</h1>
-<p>{{ message }}</p>
-{% if details %}<ul>{% for d in details %}<li>{{ d }}</li>{% endfor %}</ul>{% endif %}
+<div class="erreur" role="alert">
+  <p>{{ message }}</p>
+  {% if details %}<ul>{% for d in details %}<li>{{ d }}</li>{% endfor %}</ul>{% endif %}
+</div>
 <p><a href="/">Retour à l'accueil</a></p>
 {% endblock %}

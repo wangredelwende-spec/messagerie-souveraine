@@ -2,7 +2,8 @@
 {% block titre %}Agent enrôlé{% endblock %}
 {% block contenu %}
 <h1>Agent enrôlé : {{ agent.firstName }} {{ agent.lastName }}</h1>
-<dl>
+<p class="message" role="status">Le compte a été créé.</p>
+<dl class="fiche">
   <dt>Identifiant</dt><dd><code id="identifiant">{{ identifiant }}</code></dd>
   <dt>Ministère</dt><dd>{{ ministere }}</dd>
   <dt>Fonction</dt><dd>{{ (agent.attributes or {}).get("fonction", ["—"])[0] }}</dd>

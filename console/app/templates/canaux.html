@@ -2,12 +2,13 @@
 {% block titre %}Canaux{% endblock %}
 {% block contenu %}
 <h1>Canaux institutionnels</h1>
-<p>Un salon par ministère : chiffré de bout en bout, sur invitation, historique visible seulement à partir
+<p class="aide">Un salon par ministère : chiffré de bout en bout, sur invitation, historique visible seulement à partir
    de l'arrivée. Seule la console y ajoute des membres ; elle ne peut lire aucun message.</p>
-{% if message %}<p class="message">{{ message }}</p>{% endif %}
-{% if erreur %}<p class="erreur">{{ erreur }}</p>{% endif %}
-<table>
-  <thead><tr><th>Ministère</th><th>Salon</th><th>Agents actifs</th><th>Pas encore dans le canal</th><th></th></tr></thead>
+{% if message %}<p class="message" role="status">{{ message }}</p>{% endif %}
+{% if erreur %}<p class="erreur" role="alert">{{ erreur }}</p>{% endif %}
+{# Tableau affiché en cartes par la feuille de style (une carte par ministère) #}
+<table class="cartes canaux">
+  <thead><tr><th scope="col">Ministère</th><th scope="col">Salon</th><th scope="col">Agents actifs</th><th scope="col">Pas encore dans le canal</th><th scope="col">Action</th></tr></thead>
   <tbody>
   {% for c in canaux %}
     <tr>
@@ -26,10 +27,10 @@
 </table>
 
 <h2>Salons « Confidentiel » à expiration automatique</h2>
-<p>Chiffrés, sur invitation, verrouillés : seule la console peut inviter ou modifier le salon.
+<p class="aide">Chiffrés, sur invitation, verrouillés : seule la console peut inviter ou modifier le salon.
    Les messages sont purgés du serveur une fois leur durée de vie écoulée.</p>
-<table id="confidentiels">
-  <thead><tr><th>Salon</th><th>Durée de vie</th><th>Membres</th><th>Créé (UTC)</th></tr></thead>
+<table id="confidentiels" class="cartes confidentiels">
+  <thead><tr><th scope="col">Salon</th><th scope="col">Durée de vie</th><th scope="col">Membres</th><th scope="col">Créé (UTC)</th></tr></thead>
   <tbody>
   {% for s in confidentiels %}
     <tr>
@@ -44,22 +45,29 @@
   </tbody>
 </table>
 
+<section class="bloc">
 <h3>Créer un salon Confidentiel</h3>
 <form method="post" action="/confidentiels" class="formulaire">
   <input type="hidden" name="csrf" value="{{ csrf }}">
-  <label>Sujet (nom neutre : il est visible du serveur)
-    <input name="sujet" required maxlength="80" placeholder="ex. Réunion logistique"></label>
-  <label>Durée de vie des messages
-    <select name="duree" required>
-      {% for cle, d in durees.items() %}<option value="{{ cle }}">{{ d[0] }}</option>{% endfor %}
-    </select>
-  </label>
-  <fieldset>
+  <label for="sujet">Sujet</label>
+  <input id="sujet" name="sujet" required maxlength="80" placeholder="ex. Réunion logistique" aria-describedby="aide-sujet">
+  <p class="aide" id="aide-sujet">80 caractères au plus. Choisissez un nom neutre : le nom d'un salon n'est pas
+     chiffré, le serveur le voit.</p>
+  <label for="duree">Durée de vie des messages</label>
+  <select id="duree" name="duree" required aria-describedby="aide-duree">
+    {% for cle, d in durees.items() %}<option value="{{ cle }}">{{ d[0] }}</option>{% endfor %}
+  </select>
+  <p class="aide" id="aide-duree">Passé ce délai, les messages sont effacés du serveur (vérification chaque minute).
+     Les copies déjà reçues restent sur les appareils.</p>
+  <fieldset aria-describedby="aide-agents">
     <legend>Agents à inviter</legend>
+    <p class="aide" id="aide-agents">Seuls les agents actifs sont proposés. Personne ne pourra en inviter d'autres
+       depuis Element.</p>
     {% for a in agents %}
     <label class="case"><input type="checkbox" name="agents" value="{{ a.id }}"> {{ a.username }} ({{ a.firstName }} {{ a.lastName }})</label>
     {% endfor %}
   </fieldset>
   <button class="bouton">Créer le salon</button>
 </form>
+</section>
 {% endblock %}

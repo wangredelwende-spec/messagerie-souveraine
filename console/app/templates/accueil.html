@@ -2,10 +2,24 @@
 {% block titre %}Annuaire{% endblock %}
 {% block contenu %}
 <h1>Annuaire des agents</h1>
+
+{# Résumé : tous les agents de toutes les sections, comptés par statut #}
+{% set tous = sections | map(attribute="agents") | sum(start=[]) %}
+<ul class="resume" aria-label="Résumé des statuts">
+  <li><span class="nombre">{{ tous | selectattr("statut", "equalto", "actif") | list | length }}</span>
+      <span class="statut actif">Actifs</span></li>
+  <li><span class="nombre">{{ tous | selectattr("statut", "equalto", "suspendu") | list | length }}</span>
+      <span class="statut suspendu">Suspendus</span></li>
+  <li><span class="nombre">{{ tous | selectattr("statut", "equalto", "revoque") | list | length }}</span>
+      <span class="statut revoque">Révoqués (comptes désactivés)</span></li>
+</ul>
+
 {% for s in sections %}
+<section class="bloc">
 <h2>{{ s.nom }}</h2>
+<div class="defile">
 <table>
-  <thead><tr><th>Fonction</th><th>Nom</th><th>Identifiant</th><th>Statut</th></tr></thead>
+  <thead><tr><th scope="col">Fonction</th><th scope="col">Nom</th><th scope="col">Identifiant</th><th scope="col">Statut</th></tr></thead>
   <tbody>
   {% for a in s.agents %}
     <tr>
@@ -19,5 +33,7 @@
   {% endfor %}
   </tbody>
 </table>
+</div>
+</section>
 {% endfor %}
 {% endblock %}
