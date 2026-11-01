@@ -14,14 +14,14 @@ Le nom vient du griot, qui porte la parole de confiance.
 ## Architecture
 
 ```
-Navigateur de l'agent ──HTTPS──► Caddy (seule porte d'entrée, port 443)
-                                  ├─► Element Web : l'application ; le chiffrement se fait sur l'appareil
+Navigateur de l'agent ──HTTPS──► Caddy (port 443)
+                                  ├─► Element Web : client, chiffrement sur l'appareil
                                   ├─► Synapse + PostgreSQL : serveur Matrix, ne stocke que du chiffré
                                   ├─► Keycloak : identités, mot de passe + TOTP, rôles, ministères
-                                  └─► Console d'administration : enrôlement, annuaire, révocation, audit
+                                  └─► Console : enrôlement, annuaire, révocation, audit
 ```
 
-Réseau Docker interne sans accès à Internet ; seul Caddy est exposé. Fédération Matrix coupée : aucune donnée ne quitte le serveur de l'État.
+Réseau Docker interne sans Internet, seul Caddy exposé, fédération Matrix coupée : rien ne quitte le serveur de l'État.
 
 ## Technologies et licences
 
@@ -33,7 +33,8 @@ Réseau Docker interne sans accès à Internet ; seul Caddy est exposé. Fédér
 - **Caddy** 2.11, HTTPS et autorité de certification interne — Apache-2.0 — https://github.com/caddyserver/caddy
 - **Docker Compose**, déploiement — Apache-2.0 — https://github.com/docker/compose
 - **FastAPI**, console — MIT — https://github.com/fastapi/fastapi
-- **Uvicorn, Jinja2, httpx, Authlib, itsdangerous**, console — BSD-3-Clause ; **python-multipart** — Apache-2.0 — dépôts GitHub `encode/uvicorn`, `pallets/jinja`, `encode/httpx`, `authlib/authlib`, `pallets/itsdangerous`, `Kludex/python-multipart`
+- **Uvicorn, Jinja2, httpx, Authlib, itsdangerous**, console — BSD-3-Clause — https://github.com/encode/uvicorn · https://github.com/pallets/jinja · https://github.com/encode/httpx · https://github.com/authlib/authlib · https://github.com/pallets/itsdangerous
+- **python-multipart**, formulaires de la console — Apache-2.0 — https://github.com/Kludex/python-multipart
 - **pyotp**, tests automatisés — MIT — https://github.com/pyauth/pyotp
 - **Aegis** / **FreeOTP**, applications TOTP des agents — GPL-3.0 / Apache-2.0 — https://github.com/beemdevelopment/Aegis · https://github.com/freeotp/freeotp-android
 
@@ -102,12 +103,12 @@ technique depuis le réseau interne uniquement, par exemple :
 
 ## Limites
 
-- **Appareil volé encore ouvert :** la révocation coupe l'accès au serveur et aux nouveaux messages ; ce qui est déjà sur l'appareil peut rester lisible.
-- **Captures d'écran et transferts :** impossibles à bloquer dans un navigateur. Salons Confidentiel : la purge a lieu sur le serveur, pas sur les appareils.
-- **Métadonnées :** le serveur voit qui échange avec qui et quand, la taille des messages et des fichiers, les noms des salons et les adresses IP (conservées 1 jour). Détail : `docs/securite.md`.
-- **Client web :** clés stockées dans le navigateur ; un poste infecté ou un serveur qui sert un client modifié compromet les messages. En production : application signée.
-- **Langues :** seuls les écrans de connexion sont traduits en mooré ; l'application Element reste en français.
-- **Prototype :** un seul serveur, sans haute disponibilité ni sauvegarde automatique ; autorité de certification et secrets de démonstration, à remplacer par ceux de l'État ; liaisons internes (Synapse, console, Keycloak) en HTTP dans le réseau Docker.
+- **Appareil volé resté ouvert :** la révocation coupe le serveur et les nouveaux messages ; l'historique déjà sur l'appareil peut rester lisible.
+- **Captures d'écran et transferts :** impossibles à bloquer dans un navigateur. Salons Confidentiel : purge sur le serveur, pas sur les appareils.
+- **Métadonnées :** le serveur voit qui échange avec qui, quand, la taille des messages et fichiers, les noms des salons, les adresses IP (gardées 1 jour). Détail : `docs/securite.md`.
+- **Client web :** clés dans le navigateur ; un poste infecté ou un client modifié servi par le serveur compromet les messages. En production : application signée.
+- **Langues :** mooré pour les écrans de connexion seulement ; Element reste en français.
+- **Prototype :** serveur unique, sans haute disponibilité ni sauvegarde automatique ; CA et secrets de démonstration à remplacer par ceux de l'État ; liaisons internes (Synapse, console, Keycloak) en HTTP dans le réseau Docker.
 
 ## Licence
 
