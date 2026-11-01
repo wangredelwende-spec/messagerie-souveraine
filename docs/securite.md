@@ -1,6 +1,6 @@
-# Éléments pour la note de sécurité
+# Sécurité de la messagerie
 
-Matière brute pour la note de sécurité (2 pages maximum à rendre). Tout ce qui suit a été construit **et testé** sur le prototype. À condenser : garder les menaces, les protections avec leur preuve, les métadonnées et les limites.
+Menaces prises en compte, protections et leurs preuves, métadonnées visibles par le serveur, limites connues.
 
 ---
 

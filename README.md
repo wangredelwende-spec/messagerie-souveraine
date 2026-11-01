@@ -93,6 +93,8 @@ TOTP avec une application open source (Aegis ou FreeOTP) : scanner le QR code, p
 | `admin.messagerie` | `Admin-Demo-2026!` | Transition digitale | Administratrice de la messagerie | admin-messagerie |
 | `stagiaire.sansrole` | `Stagiaire-Demo-2026!` | Santé | Stagiaire | *aucun* : refusé par Synapse (test d'intrusion) |
 
+Vérifier le socle de sécurité, commande par commande : `docs/verifier-le-socle.md`.
+
 La console technique Keycloak (`/admin`) et le realm `master` ne sont pas publiés (404). Administration
 technique depuis le réseau interne uniquement, par exemple :
 `docker compose exec keycloak /opt/keycloak/bin/kcadm.sh config credentials --server http://keycloak:8080 --realm master --user admin`
@@ -102,7 +104,7 @@ technique depuis le réseau interne uniquement, par exemple :
 
 - **Appareil volé encore ouvert :** la révocation coupe l'accès au serveur et aux nouveaux messages ; ce qui est déjà sur l'appareil peut rester lisible.
 - **Captures d'écran et transferts :** impossibles à bloquer dans un navigateur. Salons Confidentiel : la purge a lieu sur le serveur, pas sur les appareils.
-- **Métadonnées :** le serveur voit qui échange avec qui et quand, la taille des messages et des fichiers, les noms des salons et les adresses IP (conservées 1 jour). Détail : `docs/elements-securite.md`.
+- **Métadonnées :** le serveur voit qui échange avec qui et quand, la taille des messages et des fichiers, les noms des salons et les adresses IP (conservées 1 jour). Détail : `docs/securite.md`.
 - **Client web :** clés stockées dans le navigateur ; un poste infecté ou un serveur qui sert un client modifié compromet les messages. En production : application signée.
 - **Langues :** seuls les écrans de connexion sont traduits en mooré ; l'application Element reste en français.
 - **Prototype :** un seul serveur, sans haute disponibilité ni sauvegarde automatique ; autorité de certification et secrets de démonstration, à remplacer par ceux de l'État ; liaisons internes (Synapse, console, Keycloak) en HTTP dans le réseau Docker.
